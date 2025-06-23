@@ -1,0 +1,97 @@
+.PHONY: help install dev test lint typecheck format run migrate upgrade downgrade clean
+
+# Default target
+help:
+	@echo "Coffee Tasting API - Available commands:"
+	@echo ""
+	@echo "Setup:"
+	@echo "  install     Install production dependencies"
+	@echo "  dev         Install development dependencies"
+	@echo ""
+	@echo "Development:"
+	@echo "  run         Start the development server"
+	@echo "  test        Run tests"
+	@echo "  lint        Run linting (ruff)"
+	@echo "  typecheck   Run type checking (mypy)"
+	@echo "  format      Format code (ruff)"
+	@echo ""
+	@echo "Database:"
+	@echo "  migrate     Create new migration"
+	@echo "  upgrade     Apply migrations"
+	@echo "  downgrade   Rollback last migration"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  clean       Clean up cache files"
+
+# Installation
+install:
+	pip install -e .
+
+dev:
+	pip install -e ".[dev]"
+
+# Development server
+run:
+	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Testing
+test:
+	pytest
+
+test-cov:
+	pytest --cov=app --cov-report=html --cov-report=term-missing
+
+# Code quality
+lint:
+	ruff check .
+
+typecheck:
+	mypy .
+
+format:
+	ruff format .
+
+# Fix common issues
+fix:
+	ruff check --fix .
+	ruff format .
+
+# Database migrations
+migrate:
+	@read -p "Enter migration message: " message; \
+	alembic revision --autogenerate -m "$$message"
+
+upgrade:
+	alembic upgrade head
+
+downgrade:
+	alembic downgrade -1
+
+# Database utilities
+db-current:
+	alembic current
+
+db-history:
+	alembic history
+
+# Clean up
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	rm -rf .pytest_cache/ 2>/dev/null || true
+	rm -rf htmlcov/ 2>/dev/null || true
+	rm -rf .mypy_cache/ 2>/dev/null || true
+	rm -rf .ruff_cache/ 2>/dev/null || true
+
+# Docker (if needed later)
+docker-build:
+	docker build -t coffee-tasting-api .
+
+docker-run:
+	docker run -p 8000:8000 coffee-tasting-api
+
+# Development shortcuts
+check: lint typecheck test
+
+all: clean format lint typecheck test
