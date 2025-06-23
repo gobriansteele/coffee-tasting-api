@@ -1,5 +1,4 @@
 from typing import Optional, List
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,10 +13,10 @@ logger = get_logger(__name__)
 
 class RoasterRepository(BaseRepository[Roaster, RoasterCreate, RoasterUpdate]):
     """Repository for roaster operations."""
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__(Roaster)
-    
+
     async def get_by_name(self, db: AsyncSession, name: str) -> Optional[Roaster]:
         """Get roaster by name."""
         try:

@@ -5,7 +5,6 @@ import supabase
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps.auth import get_current_user
 from app.api.deps.database import get_db
 from app.repositories.roaster import roaster_repository
 from app.schemas.roaster import RoasterCreate, RoasterResponse, RoasterListResponse
@@ -34,7 +33,7 @@ async def create_roaster(
         roaster = await roaster_repository.create(db, obj_in=roaster_data)
         logger.info("Created roaster", roaster_id=str(roaster.id), name=roaster.name)
         
-        return RoasterResponse.from_orm(roaster)
+        return RoasterResponse.model_validate(roaster)
     
     except HTTPException:
         raise
@@ -63,7 +62,7 @@ async def list_roasters(
         total = await roaster_repository.count(db)
         
         return RoasterListResponse(
-            roasters=[RoasterResponse.from_orm(roaster) for roaster in roasters],
+            roasters=[RoasterResponse.model_validate(roaster) for roaster in roasters],
             total=total,
             page=skip // limit + 1,
             size=len(roasters)
@@ -86,7 +85,7 @@ async def get_roaster(
         if not roaster:
             raise HTTPException(status_code=404, detail="Roaster not found")
         
-        return RoasterResponse.from_orm(roaster)
+        return RoasterResponse.model_validate(roaster)
     
     except HTTPException:
         raise

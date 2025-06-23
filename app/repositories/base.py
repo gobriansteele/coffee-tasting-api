@@ -1,17 +1,18 @@
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase
+from pydantic import BaseModel
 
 from app.core.logging import get_logger
+from app.models.base import Base
 
 logger = get_logger(__name__)
 
-ModelType = TypeVar("ModelType", bound=DeclarativeBase)
-CreateSchemaType = TypeVar("CreateSchemaType")
-UpdateSchemaType = TypeVar("UpdateSchemaType")
+ModelType = TypeVar("ModelType", bound=Base)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
@@ -41,7 +42,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         try:
             stmt = select(self.model).offset(skip).limit(limit)
             result = await db.execute(stmt)
-            return result.scalars().all()
+            return list(result.scalars().all())
         except Exception as e:
             logger.error(f"Error getting multiple {self.model.__name__}", error=str(e))
             raise
@@ -54,7 +55,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     ) -> ModelType:
         """Create a new record."""
         try:
-            obj_in_data = obj_in.model_dump() if hasattr(obj_in, 'model_dump') else obj_in.dict()
+            obj_in_data = obj_in.model_dump()
             db_obj = self.model(**obj_in_data)
             db.add(db_obj)
             await db.commit()
@@ -78,7 +79,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if isinstance(obj_in, dict):
                 update_data = obj_in
             else:
-                update_data = obj_in.model_dump(exclude_unset=True) if hasattr(obj_in, 'model_dump') else obj_in.dict(exclude_unset=True)
+                update_data = obj_in.model_dump(exclude_unset=True)
             
             for field, value in update_data.items():
                 if hasattr(db_obj, field):
@@ -113,10 +114,10 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def count(self, db: AsyncSession) -> int:
         """Count total records."""
         try:
-            from sqlalchemy import func
             stmt = select(func.count(self.model.id))
             result = await db.execute(stmt)
-            return result.scalar()
+            count = result.scalar()
+            return count or 0
         except Exception as e:
             logger.error(f"Error counting {self.model.__name__}", error=str(e))
             raise

@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional, Callable
 
 from sqlalchemy import create_engine, MetaData, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -27,8 +27,8 @@ Base.metadata = MetaData(naming_convention=convention)
 # Database engines
 engine = None
 async_engine = None
-SessionLocal = None
-AsyncSessionLocal = None
+SessionLocal: Optional[Callable[[], Session]] = None
+AsyncSessionLocal: Optional[Callable[[], AsyncSession]] = None
 
 
 def create_database_engines() -> None:
