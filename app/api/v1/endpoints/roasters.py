@@ -1,9 +1,11 @@
 from typing import List
 from uuid import UUID
 
+import supabase
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps.auth import get_current_user
 from app.api.deps.database import get_db
 from app.repositories.roaster import roaster_repository
 from app.schemas.roaster import RoasterCreate, RoasterResponse, RoasterListResponse
@@ -78,6 +80,7 @@ async def get_roaster(
     db: AsyncSession = Depends(get_db)
 ) -> RoasterResponse:
     """Get a specific roaster by ID."""
+
     try:
         roaster = await roaster_repository.get(db, roaster_id)
         if not roaster:

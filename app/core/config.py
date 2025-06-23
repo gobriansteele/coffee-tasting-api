@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = Field(
         default=None, description="Supabase service role key"
     )
+    SUPABASE_JWT_SECRET: Optional[str] = Field(
+        default=None, description="Supabase JWT secret for token validation"
+    )
     
     # Security
     SECRET_KEY: str = Field(

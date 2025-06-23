@@ -22,6 +22,7 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean       Clean up cache files"
+	@echo "  jwt         Generate JWT token for testing (requires USER_ID and EMAIL)"
 
 # Installation
 install:
@@ -90,6 +91,16 @@ docker-build:
 
 docker-run:
 	docker run -p 8000:8000 coffee-tasting-api
+
+# JWT token generation for testing
+jwt:
+	@if [ -z "$(USER_ID)" ] || [ -z "$(EMAIL)" ]; then \
+		echo "Usage: make jwt USER_ID=<user_id> EMAIL=<email> [ROLE=<role>] [HOURS=<hours>]"; \
+		echo "Example: make jwt USER_ID=abc123 EMAIL=user@example.com"; \
+		echo "Example: make jwt USER_ID=abc123 EMAIL=user@example.com ROLE=service_role HOURS=24"; \
+		exit 1; \
+	fi
+	@python local_dev_tools/generate_jwt.py "$(USER_ID)" "$(EMAIL)" "$(ROLE)" "$(HOURS)"
 
 # Development shortcuts
 check: lint typecheck test
