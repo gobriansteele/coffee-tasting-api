@@ -44,6 +44,10 @@ def create_database_engines() -> None:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
+    # Log database URL (masked)
+    masked_url = database_url.split('@')[0].rsplit(':', 1)[0] + ':***@' + database_url.split('@')[1] if '@' in database_url else database_url
+    logger.info("Connecting to database", url=masked_url)
+    
     # Async engine (primary)
     async_database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
     async_engine = create_async_engine(
