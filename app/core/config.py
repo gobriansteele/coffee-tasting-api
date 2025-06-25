@@ -1,5 +1,5 @@
 from typing import List, Optional, Union
-from pydantic import AnyHttpUrl, Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     VERSION: str = Field(default="0.1.0", description="API version")
     
     # CORS
-    CORS_ORIGINS: List[AnyHttpUrl] = Field(
+    CORS_ORIGINS: List[str] = Field(
         default=[
             "http://localhost:3000",
             "http://localhost:8080",
