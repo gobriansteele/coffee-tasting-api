@@ -1,16 +1,15 @@
 import asyncio
 from logging.config import fileConfig
-from os import environ
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from alembic import context
+from app.core.config import settings
+
 # Import your models here
 from app.models.base import Base
-from app.models import *  # Import all models to register them
-from app.core.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -34,15 +33,15 @@ target_metadata = Base.metadata
 def get_database_url() -> str:
     """Get database URL from environment or settings."""
     database_url = str(settings.DATABASE_URL)
-    
+
     # Convert postgres:// to postgresql:// if needed
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
-    
+
     # For async operations in migrations, use asyncpg
     if not database_url.startswith("postgresql+asyncpg://"):
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-    
+
     return database_url
 
 
@@ -74,7 +73,7 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(
-        connection=connection, 
+        connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
         compare_server_default=True,

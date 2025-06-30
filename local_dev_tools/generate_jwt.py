@@ -5,8 +5,8 @@ JWT Generator for Local Development
 This script generates JWT tokens for testing purposes using the Supabase JWT secret.
 """
 
-import sys
 import datetime
+import sys
 from pathlib import Path
 
 # Add the app directory to the Python path so we can import settings
@@ -19,6 +19,7 @@ except ImportError:
     sys.exit(1)
 
 from app.core.config import settings
+
 
 def generate_jwt_token(
     user_id: str,
@@ -40,10 +41,10 @@ def generate_jwt_token(
     """
     if not settings.SUPABASE_JWT_SECRET:
         raise ValueError("SUPABASE_JWT_SECRET not configured in environment")
-    
+
     # Set token expiration
     exp = datetime.datetime.utcnow() + datetime.timedelta(hours=hours)
-    
+
     payload = {
         "sub": user_id,
         "email": email,
@@ -53,7 +54,7 @@ def generate_jwt_token(
         "iat": datetime.datetime.utcnow(),
         "iss": "supabase"
     }
-    
+
     token = jwt.encode(payload, settings.SUPABASE_JWT_SECRET, algorithm="HS256")
     return token
 
@@ -63,24 +64,24 @@ def main():
         print("Usage: python generate_jwt.py <user_id> <email> [role] [hours]")
         print("Example: python generate_jwt.py abc123 user@example.com authenticated 1")
         sys.exit(1)
-    
+
     user_id = sys.argv[1]
     email = sys.argv[2]
     role = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else "authenticated"
     hours_arg = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else "1"
     hours = int(hours_arg)
-    
+
     try:
         token = generate_jwt_token(user_id, email, role, hours)
         print("Generated JWT Token:")
         print(token)
         print("\nUse this token in your Authorization header:")
         print(f"Authorization: Bearer {token}")
-        
+
         # Decode and display token info for verification
         decoded = jwt.decode(
-            token, 
-            settings.SUPABASE_JWT_SECRET, 
+            token,
+            settings.SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
             audience="authenticated"
         )
@@ -91,7 +92,7 @@ def main():
                 print(f"  {key}: {value} ({exp_time})")
             else:
                 print(f"  {key}: {value}")
-                
+
     except Exception as e:
         print(f"Error generating token: {e}")
         sys.exit(1)

@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Any, Dict
+from typing import Any
 
 import structlog
 from structlog.stdlib import LoggerFactory
@@ -10,7 +10,7 @@ from .config import settings
 
 def configure_logging() -> None:
     """Configure structured logging for the application."""
-    
+
     # Configure structlog
     structlog.configure(
         processors=[
@@ -30,14 +30,14 @@ def configure_logging() -> None:
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, settings.LOG_LEVEL.upper()),
     )
-    
+
     # Set specific loggers
     logging.getLogger("uvicorn.access").handlers = []
     logging.getLogger("uvicorn").handlers = []

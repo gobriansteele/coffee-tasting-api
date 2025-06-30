@@ -1,6 +1,6 @@
-from typing import AsyncGenerator, Optional, Callable
+from collections.abc import AsyncGenerator, Callable
 
-from sqlalchemy import create_engine, MetaData, text
+from sqlalchemy import MetaData, create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
@@ -27,27 +27,27 @@ Base.metadata = MetaData(naming_convention=convention)
 # Database engines
 engine = None
 async_engine = None
-SessionLocal: Optional[Callable[[], Session]] = None
-AsyncSessionLocal: Optional[Callable[[], AsyncSession]] = None
+SessionLocal: Callable[[], Session] | None = None
+AsyncSessionLocal: Callable[[], AsyncSession] | None = None
 
 
 def create_database_engines() -> None:
     """Create database engines for sync and async operations."""
     global engine, async_engine, SessionLocal, AsyncSessionLocal
-    
+
     if not settings.DATABASE_URL:
         logger.error("DATABASE_URL not configured")
         raise ValueError("DATABASE_URL must be set")
-    
+
     # Convert postgres:// to postgresql:// if needed
     database_url = str(settings.DATABASE_URL)
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
-    
+
     # Log database URL (masked)
     masked_url = database_url.split('@')[0].rsplit(':', 1)[0] + ':***@' + database_url.split('@')[1] if '@' in database_url else database_url
     logger.info("Connecting to database", url=masked_url)
-    
+
     # Async engine (primary)
     async_database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
     async_engine = create_async_engine(
@@ -58,7 +58,7 @@ def create_database_engines() -> None:
         pool_size=10,
         max_overflow=20,
     )
-    
+
     # Sync engine (for migrations and admin tasks)
     engine = create_engine(
         database_url,
@@ -68,20 +68,20 @@ def create_database_engines() -> None:
         pool_size=5,
         max_overflow=10,
     )
-    
+
     # Session factories
     AsyncSessionLocal = async_sessionmaker(
         async_engine,
         class_=AsyncSession,
         expire_on_commit=False,
     )
-    
+
     SessionLocal = sessionmaker(
         autocommit=False,
         autoflush=False,
         bind=engine,
     )
-    
+
     logger.info("Database engines created successfully")
 
 
@@ -89,7 +89,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """Get async database session."""
     if AsyncSessionLocal is None:
         raise RuntimeError("Database not initialized. Call create_database_engines() first.")
-    
+
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -105,7 +105,7 @@ def get_sync_session() -> Session:
     """Get sync database session."""
     if SessionLocal is None:
         raise RuntimeError("Database not initialized. Call create_database_engines() first.")
-    
+
     return SessionLocal()
 
 
@@ -114,10 +114,10 @@ async def check_database_connection() -> bool:
     try:
         if async_engine is None:
             return False
-            
+
         async with async_engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
-        
+
         logger.info("Database connection check successful")
         return True
     except Exception as e:

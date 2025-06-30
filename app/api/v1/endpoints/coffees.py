@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.database import get_db
+from app.core.logging import get_logger
 from app.repositories.coffee import coffee_repository
 from app.repositories.roaster import roaster_repository
-from app.schemas.coffee import CoffeeCreate, CoffeeResponse, CoffeeListResponse
-from app.core.logging import get_logger
+from app.repositories.flavor_tag import flavor_tag_repository
+from app.schemas.coffee import CoffeeCreate, CoffeeListResponse, CoffeeResponse
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -27,11 +28,11 @@ async def create_coffee(
                 status_code=404,
                 detail=f"Roaster with ID '{coffee_data.roaster_id}' not found"
             )
-        
+
         # Check if coffee with same name already exists for this roaster
         existing_coffee = await coffee_repository.get_by_name_and_roaster(
-            db, 
-            coffee_data.name, 
+            db,
+            coffee_data.name,
             coffee_data.roaster_id
         )
         if existing_coffee:
@@ -39,18 +40,31 @@ async def create_coffee(
                 status_code=400,
                 detail=f"Coffee '{coffee_data.name}' already exists for roaster '{roaster.name}'"
             )
-        
-        # Create the coffee
-        coffee = await coffee_repository.create(db, obj_in=coffee_data)
-        logger.info(
-            "Created coffee", 
-            coffee_id=str(coffee.id), 
-            name=coffee.name,
-            roaster_id=str(coffee.roaster_id)
+
+        # Handle flavor tags
+        flavor_tags = []
+        if coffee_data.flavor_tags:
+            flavor_tags = await flavor_tag_repository.find_or_create_multiple(
+                db, 
+                coffee_data.flavor_tags
+            )
+
+        # Create the coffee with flavor tags
+        coffee = await coffee_repository.create_with_flavor_tags(
+            db, 
+            coffee_data=coffee_data,
+            flavor_tags=flavor_tags
         )
-        
+        logger.info(
+            "Created coffee",
+            coffee_id=str(coffee.id),
+            name=coffee.name,
+            roaster_id=str(coffee.roaster_id),
+            flavor_tags=coffee_data.flavor_tags
+        )
+
         return CoffeeResponse.model_validate(coffee)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -97,6 +111,18 @@ async def list_coffees(
 
 
 @router.get("/{coffee_id}")
-async def get_coffee():
+async def get_coffee(
+    coffee_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
     """Get a specific coffee."""
-    return {"message": "Get coffee - Coming soon"}
+    try:
+        coffee = await coffee_repository.get_with_flavor_tags(db, coffee_id)
+        if not coffee:
+            raise HTTPException(status_code=404, detail="Coffee not found")
+
+        return CoffeeResponse.model_validate(coffee)
+
+    except Exception as e:
+        logger.error("Error getting coffee", coffee_id=str(coffee_id), error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

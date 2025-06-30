@@ -1,11 +1,11 @@
 from .base import Base
-from .coffee import Coffee, Roaster, FlavorTag, ProcessingMethod, RoastLevel
-from .tasting import TastingSession, TastingNote, BrewMethod, GrindSize
+from .coffee import Coffee, FlavorTag, ProcessingMethod, Roaster, RoastLevel
+from .tasting import BrewMethod, GrindSize, TastingNote, TastingSession
 
 __all__ = [
     "Base",
     "Coffee",
-    "Roaster", 
+    "Roaster",
     "FlavorTag",
     "TastingSession",
     "TastingNote",
