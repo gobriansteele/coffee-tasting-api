@@ -83,7 +83,10 @@ async def list_coffees(
     """List all coffees."""
 
     try:
-        if roaster_id:
+        if search:
+            # Search by name
+            coffees = await coffee_repository.search_by_name(db, search, skip=skip, limit=limit)
+        elif roaster_id:
             # Filter by roaster ID
             roaster = await roaster_repository.get(db, roaster_id)
             if not roaster:

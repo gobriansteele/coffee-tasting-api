@@ -18,6 +18,37 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
     def __init__(self) -> None:
         super().__init__(Coffee)
 
+    async def get(self, db: AsyncSession, id: UUID) -> Coffee | None:
+        """Get a single coffee by ID with eager loaded flavor_tags."""
+        try:
+            return await db.scalar(
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags))
+                .where(self.model.id == id)
+            )
+        except Exception as e:
+            logger.error(f"Error getting {self.model.__name__}", error=str(e))
+            raise
+
+    async def get_multi(
+        self,
+        db: AsyncSession,
+        *,
+        skip: int = 0,
+        limit: int = 100
+    ) -> list[Coffee]:
+        """Get multiple records with pagination and eager load flavor_tags."""
+        try:
+            return list(await db.scalars(
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags))
+                .offset(skip)
+                .limit(limit)
+            ))
+        except Exception as e:
+            logger.error(f"Error getting multiple {self.model.__name__}", error=str(e))
+            raise
+
     async def create_with_flavor_tags(
         self,
         db: AsyncSession,
@@ -109,6 +140,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         try:
             stmt = (
                 select(self.model)
+                .options(selectinload(self.model.flavor_tags))
                 .where(self.model.roaster_id == roaster_id)
                 .offset(skip)
                 .limit(limit)
@@ -135,6 +167,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         try:
             stmt = (
                 select(self.model)
+                .options(selectinload(self.model.flavor_tags))
                 .where(self.model.name.ilike(f"%{name_query}%"))
                 .offset(skip)
                 .limit(limit)
@@ -161,6 +194,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         try:
             stmt = (
                 select(self.model)
+                .options(selectinload(self.model.flavor_tags))
                 .where(self.model.origin_country.ilike(f"%{country}%"))
                 .offset(skip)
                 .limit(limit)
