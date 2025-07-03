@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
+from app.models.coffee import Coffee
 from app.models.tasting import TastingNote, TastingSession
 from app.repositories.base import BaseRepository
 from app.repositories.flavor_tag import flavor_tag_repository
@@ -33,7 +34,9 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 select(self.model)
                 .options(
                     selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag)
+                    .selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee)
+                    .selectinload(Coffee.roaster)
                 )
                 .where(self.model.user_id == user_id)
                 .order_by(self.model.created_at.desc())
@@ -99,7 +102,9 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 select(self.model)
                 .options(
                     selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag)
+                    .selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee)
+                    .selectinload(Coffee.roaster)
                 )
                 .where(self.model.id == db_session.id)
             )
@@ -131,7 +136,9 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 select(self.model)
                 .options(
                     selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag)
+                    .selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee)
+                    .selectinload(Coffee.roaster)
                 )
                 .where(self.model.id == id)
             )

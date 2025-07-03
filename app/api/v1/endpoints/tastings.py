@@ -8,7 +8,6 @@ from app.api.deps.database import get_db
 from app.core.logging import get_logger
 from app.repositories.coffee import coffee_repository
 from app.repositories.tasting import tasting_repository
-from app.repositories.flavor_tag import flavor_tag_repository
 from app.schemas.tasting import (
     TastingSessionCreate,
     TastingSessionListResponse,

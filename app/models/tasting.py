@@ -72,6 +72,17 @@ class TastingSession(Base):
     coffee: Mapped["Coffee"] = relationship("Coffee", back_populates="tasting_sessions")
     tasting_notes: Mapped[list["TastingNote"]] = relationship("TastingNote", back_populates="tasting_session", cascade="all, delete-orphan")
 
+    # Properties for Pydantic serialization
+    @property
+    def coffee_name(self) -> str:
+        """Get the coffee name for this tasting session."""
+        return self.coffee.name if self.coffee else ""
+
+    @property
+    def roaster_name(self) -> str:
+        """Get the roaster name for this tasting session."""
+        return self.coffee.roaster.name if self.coffee and self.coffee.roaster else ""
+
 
 class TastingNote(Base):
     """Individual flavor notes from a tasting session."""

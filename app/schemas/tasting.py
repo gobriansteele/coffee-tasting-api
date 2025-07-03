@@ -75,7 +75,7 @@ class TastingSessionUpdate(BaseModel):
     # Measurements
     coffee_dose: Decimal | None = Field(None, ge=0, decimal_places=1, description="Coffee dose (grams)")
     water_amount: Decimal | None = Field(None, ge=0, decimal_places=1, description="Water amount (grams/ml)")
-    water_temperature: int | None = Field(None, ge=0, le=100, description="Water temperature (celsius)")
+    water_temperature: int | None = Field(None, ge=0, le=140, description="Water temperature (celsius)")
     brew_time: str | None = Field(None, max_length=20, description="Brew time")
 
     # Equipment
@@ -92,6 +92,8 @@ class TastingSessionUpdate(BaseModel):
 class TastingSessionResponse(TastingSessionBase):
     """Schema for tasting session responses."""
     id: UUID
+    coffee_name: str
+    roaster_name: str
     user_id: str
     created_at: datetime
     updated_at: datetime
