@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID as PY_UUID
 from uuid import uuid4
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, String
 from sqlalchemy.dialects.postgresql import UUID as SQL_UUID
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -21,6 +21,12 @@ class Base(DeclarativeBase):
         onupdate=datetime.utcnow,
         nullable=False
     )
+
+    # Audit fields
+    created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     @declared_attr.directive
     def __tablename__(self) -> str:

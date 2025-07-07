@@ -72,13 +72,13 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             if tasting_data.tasting_notes:
                 # Get all unique flavor names
                 flavor_names = [note.flavor_name for note in tasting_data.tasting_notes]
-                
+
                 # Find or create flavor tags
                 flavor_tags = await flavor_tag_repository.find_or_create_multiple(db, flavor_names)
-                
+
                 # Create mapping of flavor name to flavor tag
                 flavor_map = {tag.name.lower(): tag for tag in flavor_tags}
-                
+
                 # Create tasting notes
                 for note_data in tasting_data.tasting_notes:
                     flavor_tag = flavor_map.get(note_data.flavor_name.lower())
@@ -93,10 +93,10 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             await db.commit()
             # Refresh with eager loading of tasting notes and their flavor tags
             await db.refresh(
-                db_session, 
+                db_session,
                 ['tasting_notes']
             )
-            
+
             # Re-fetch with proper eager loading for response serialization
             db_session = await db.scalar(
                 select(self.model)

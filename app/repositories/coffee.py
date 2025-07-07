@@ -54,21 +54,25 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         db: AsyncSession,
         *,
         coffee_data: CoffeeCreate,
-        flavor_tags: list[FlavorTag]
+        flavor_tags: list[FlavorTag],
+        current_user_id: str | None = None
     ) -> Coffee:
         """Create a coffee with associated flavor tags."""
         try:
             # Create coffee data without flavor_tags field
             coffee_dict = coffee_data.model_dump(exclude={'flavor_tags'})
+            if current_user_id:
+                coffee_dict['created_by'] = current_user_id
+                coffee_dict['updated_by'] = current_user_id
             db_coffee = self.model(**coffee_dict)
-            
+
             # Associate flavor tags
             db_coffee.flavor_tags = flavor_tags
-            
+
             db.add(db_coffee)
             await db.commit()
             await db.refresh(db_coffee, ['flavor_tags'])
-            
+
             logger.info(
                 "Created coffee with flavor tags",
                 coffee_id=str(db_coffee.id),
@@ -76,7 +80,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
                 flavor_count=len(flavor_tags)
             )
             return db_coffee
-            
+
         except Exception as e:
             await db.rollback()
             logger.error(

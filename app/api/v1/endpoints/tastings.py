@@ -49,7 +49,7 @@ async def list_tasting_sessions(
             user_id=current_user_id,
             error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/", response_model=TastingSessionResponse, status_code=201)
@@ -92,7 +92,7 @@ async def create_tasting_session(
             user_id=current_user_id,
             error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/{session_id}", response_model=TastingSessionResponse)
@@ -126,7 +126,7 @@ async def get_tasting_session(
             user_id=current_user_id,
             error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.put("/{session_id}", response_model=TastingSessionResponse)
@@ -161,7 +161,7 @@ async def update_tasting_session(
                 )
 
         # Update the tasting
-        updated_tasting = await tasting_repository.update(
+        await tasting_repository.update(
             db,
             db_obj=tasting,
             obj_in=update_data
@@ -187,7 +187,7 @@ async def update_tasting_session(
             user_id=current_user_id,
             error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/{session_id}", status_code=204)
@@ -212,7 +212,7 @@ async def delete_tasting_session(
 
     except ValueError as e:
         # This is raised when session not found or doesn't belong to user
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(
             "Error deleting tasting session",
@@ -220,4 +220,4 @@ async def delete_tasting_session(
             user_id=current_user_id,
             error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e

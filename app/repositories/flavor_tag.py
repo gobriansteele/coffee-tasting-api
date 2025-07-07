@@ -22,7 +22,7 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
         category: str | None = None
     ) -> FlavorTag:
         """Find a flavor tag by name or create it if it doesn't exist.
-        
+
         Name matching is case-insensitive to avoid duplicates.
         """
         try:
@@ -31,11 +31,11 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
                 select(self.model)
                 .where(self.model.name.ilike(name))
             )
-            
+
             if existing_tag:
                 logger.debug(f"Found existing flavor tag: {existing_tag.name}")
                 return existing_tag
-            
+
             # Create new tag if not found
             new_tag = self.model(
                 name=name,
@@ -43,10 +43,10 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
             )
             db.add(new_tag)
             await db.flush()  # Flush to get ID but don't commit yet
-            
+
             logger.info(f"Created new flavor tag: {name}")
             return new_tag
-            
+
         except Exception as e:
             logger.error(
                 "Error in find_or_create_by_name",
@@ -61,7 +61,7 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
         names: list[str]
     ) -> list[FlavorTag]:
         """Find or create multiple flavor tags by name.
-        
+
         Returns a list of FlavorTag objects in the same order as the input names.
         """
         try:
@@ -71,7 +71,7 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
                     tag = await self.find_or_create_by_name(db, name.strip())
                     tags.append(tag)
             return tags
-            
+
         except Exception as e:
             logger.error(
                 "Error in find_or_create_multiple",

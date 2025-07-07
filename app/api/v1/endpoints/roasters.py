@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps.auth import get_current_user_id
 from app.api.deps.database import get_db
 from app.core.logging import get_logger
 from app.repositories.roaster import roaster_repository
@@ -15,7 +16,8 @@ router = APIRouter()
 @router.post("/", response_model=RoasterResponse, status_code=201)
 async def create_roaster(
     roaster_data: RoasterCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ) -> RoasterResponse:
     """Create a new roaster."""
     try:
@@ -28,7 +30,7 @@ async def create_roaster(
             )
 
         # Create the roaster
-        roaster = await roaster_repository.create(db, obj_in=roaster_data)
+        roaster = await roaster_repository.create(db, obj_in=roaster_data, current_user_id=current_user_id)
         logger.info("Created roaster", roaster_id=str(roaster.id), name=roaster.name)
 
         return RoasterResponse.model_validate(roaster)
@@ -37,7 +39,7 @@ async def create_roaster(
         raise
     except Exception as e:
         logger.error("Error creating roaster", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/", response_model=RoasterListResponse)
@@ -46,7 +48,8 @@ async def list_roasters(
     limit: int = Query(100, ge=1, le=1000, description="Number of roasters to return"),
     search: str = Query(None, description="Search roasters by name"),
     location: str = Query(None, description="Filter roasters by location"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _current_user_id: str = Depends(get_current_user_id)
 ) -> RoasterListResponse:
     """List roasters with optional filtering and pagination."""
     try:
@@ -68,13 +71,14 @@ async def list_roasters(
 
     except Exception as e:
         logger.error("Error listing roasters", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/{roaster_id}", response_model=RoasterResponse)
 async def get_roaster(
     roaster_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
 ) -> RoasterResponse:
     """Get a specific roaster by ID."""
 
@@ -89,4 +93,4 @@ async def get_roaster(
         raise
     except Exception as e:
         logger.error("Error getting roaster", roaster_id=str(roaster_id), error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
