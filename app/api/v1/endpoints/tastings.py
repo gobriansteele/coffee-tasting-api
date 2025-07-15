@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id, require_user_access
 from app.api.deps.database import get_db
 from app.core.logging import get_logger
 from app.repositories.coffee import coffee_repository
@@ -195,29 +195,28 @@ async def delete_tasting_session(
     session_id: UUID,
     current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
-) -> None:
-    """Delete a tasting session if it belongs to the authenticated user."""
+):
+    """Delete a tasting session."""
     try:
-        await tasting_repository.delete_by_id(
-            db,
-            id=session_id,
-            user_id=current_user_id
-        )
+        # Check if tasting session exists and is not already deleted
+        tasting = await tasting_repository.get(db, session_id)
+        if not tasting:
+            raise HTTPException(status_code=404, detail="Tasting session not found")
 
-        logger.info(
-            "Deleted tasting session",
-            tasting_id=str(session_id),
-            user_id=current_user_id
-        )
+        # Verify the user owns this tasting session (created by them)
+        require_user_access(tasting.created_by, current_user_id)
 
+        # Perform soft delete
+        await tasting_repository.delete(db, id=session_id, current_user_id=current_user_id)
+
+        logger.info("Deleted tasting session", session_id=str(session_id), user_id=current_user_id)
+
+    except HTTPException:
+        raise
     except ValueError as e:
-        # This is raised when session not found or doesn't belong to user
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        # This handles the case where the tasting session was not found in the delete method
+        logger.error("Tasting session not found for deletion", session_id=str(session_id), error=str(e))
+        raise HTTPException(status_code=404, detail="Tasting session not found") from e
     except Exception as e:
-        logger.error(
-            "Error deleting tasting session",
-            session_id=str(session_id),
-            user_id=current_user_id,
-            error=str(e)
-        )
+        logger.error("Error deleting tasting session", session_id=str(session_id), error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e

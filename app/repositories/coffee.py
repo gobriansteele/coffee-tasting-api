@@ -18,7 +18,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
     def __init__(self) -> None:
         super().__init__(Coffee)
 
-    async def get(self, db: AsyncSession, id: UUID) -> Coffee | None:
+    async def get(self, db: AsyncSession, id: UUID, include_delete: bool = False) -> Coffee | None:
         """Get a single coffee by ID with eager loaded flavor_tags."""
         try:
             return await db.scalar(
@@ -35,7 +35,8 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         db: AsyncSession,
         *,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
+        include_deleted: bool = False
     ) -> list[Coffee]:
         """Get multiple records with pagination and eager load flavor_tags."""
         try:

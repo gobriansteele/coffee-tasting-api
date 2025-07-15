@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id, require_user_access
 from app.api.deps.database import get_db
 from app.core.logging import get_logger
 from app.repositories.roaster import roaster_repository
@@ -93,4 +93,36 @@ async def get_roaster(
         raise
     except Exception as e:
         logger.error("Error getting roaster", roaster_id=str(roaster_id), error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.delete("/{roaster_id}", status_code=204)
+async def delete_roaster(
+    roaster_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """Delete a specific roaster."""
+    try:
+        # Check if roaster exists and is not already deleted
+        roaster = await roaster_repository.get(db, roaster_id)
+        if not roaster:
+            raise HTTPException(status_code=404, detail="Roaster not found")
+
+        # Verify the user owns this roaster (created by them)
+        require_user_access(roaster.created_by, current_user_id)
+
+        # Perform soft delete
+        await roaster_repository.delete(db, id=roaster_id, current_user_id=current_user_id)
+
+        logger.info("Deleted roaster", roaster_id=str(roaster_id), user_id=current_user_id)
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # This handles the case where the roaster was not found in the delete method
+        logger.error("Roaster not found for deletion", roaster_id=str(roaster_id), error=str(e))
+        raise HTTPException(status_code=404, detail="Roaster not found") from e
+    except Exception as e:
+        logger.error("Error deleting roaster", roaster_id=str(roaster_id), error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id, require_user_access
 from app.api.deps.database import get_db
 from app.core.logging import get_logger
 from app.repositories.coffee import coffee_repository
@@ -133,4 +133,36 @@ async def get_coffee(
 
     except Exception as e:
         logger.error("Error getting coffee", coffee_id=str(coffee_id), error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.delete("/{coffee_id}", status_code=204)
+async def delete_coffee(
+    coffee_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """Delete a specific coffee."""
+    try:
+        # Check if coffee exists and is not already deleted
+        coffee = await coffee_repository.get(db, coffee_id)
+        if not coffee:
+            raise HTTPException(status_code=404, detail="Coffee not found")
+
+        # Verify the user owns this coffee (created by them)
+        require_user_access(coffee.created_by, current_user_id)
+
+        # Perform soft delete
+        await coffee_repository.delete(db, id=coffee_id, current_user_id=current_user_id)
+
+        logger.info("Deleted coffee", coffee_id=str(coffee_id), user_id=current_user_id)
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # This handles the case where the coffee was not found in the delete method
+        logger.error("Coffee not found for deletion", coffee_id=str(coffee_id), error=str(e))
+        raise HTTPException(status_code=404, detail="Coffee not found") from e
+    except Exception as e:
+        logger.error("Error deleting coffee", coffee_id=str(coffee_id), error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e
