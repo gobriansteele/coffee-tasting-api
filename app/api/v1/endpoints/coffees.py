@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.auth import get_current_user_id, require_user_access
@@ -48,7 +48,8 @@ async def create_coffee(
         if coffee_data.flavor_tags:
             flavor_tags = await flavor_tag_repository.find_or_create_multiple(
                 db,
-                coffee_data.flavor_tags
+                coffee_data.flavor_tags,
+                user_id=current_user_id
             )
 
         # Create the coffee with flavor tags
@@ -122,7 +123,7 @@ async def get_coffee(
     coffee_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id)
-):
+) -> CoffeeResponse:
     """Get a specific coffee."""
     try:
         coffee = await coffee_repository.get_with_flavor_tags(db, coffee_id)
@@ -141,7 +142,7 @@ async def delete_coffee(
     coffee_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id)
-):
+) -> None:
     """Delete a specific coffee."""
     try:
         # Check if coffee exists and is not already deleted
@@ -150,6 +151,11 @@ async def delete_coffee(
             raise HTTPException(status_code=404, detail="Coffee not found")
 
         # Verify the user owns this coffee (created by them)
+        if not coffee.created_by:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Resource has no owner"
+            )
         require_user_access(coffee.created_by, current_user_id)
 
         # Perform soft delete

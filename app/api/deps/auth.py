@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -67,7 +67,13 @@ async def get_current_user_id(
     Returns:
         The user ID string
     """
-    return current_user["user_id"]
+    user_id = current_user.get("user_id")
+    if not user_id or not isinstance(user_id, str):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+    return cast(str, user_id)
 
 
 def require_user_access(resource_user_id: str, current_user_id: str) -> None:

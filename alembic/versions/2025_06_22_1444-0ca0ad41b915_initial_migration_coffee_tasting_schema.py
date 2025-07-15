@@ -1,7 +1,7 @@
 """Initial migration: coffee tasting schema
 
 Revision ID: 0ca0ad41b915
-Revises: 
+Revises:
 Create Date: 2025-06-22 14:44:28.571963
 
 """

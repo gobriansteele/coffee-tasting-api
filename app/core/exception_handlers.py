@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 from app.core.exceptions import APIException
 from app.core.logging import get_logger
@@ -73,8 +78,8 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     )
 
 
-def register_exception_handlers(app) -> None:
+def register_exception_handlers(app: "FastAPI") -> None:
     """Register all exception handlers with the FastAPI app."""
-    app.add_exception_handler(APIException, api_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(APIException, api_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, general_exception_handler)

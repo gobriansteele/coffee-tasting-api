@@ -63,7 +63,8 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             # Create the tasting session directly
             db_session = self.model(
                 **tasting_data.model_dump(exclude={'tasting_notes'}),
-                user_id=user_id
+                user_id=user_id,
+                created_by=user_id
             )
             db.add(db_session)
             await db.flush()  # Flush to get the session ID
@@ -74,7 +75,7 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 flavor_names = [note.flavor_name for note in tasting_data.tasting_notes]
 
                 # Find or create flavor tags
-                flavor_tags = await flavor_tag_repository.find_or_create_multiple(db, flavor_names)
+                flavor_tags = await flavor_tag_repository.find_or_create_multiple(db, flavor_names, user_id=user_id)
 
                 # Create mapping of flavor name to flavor tag
                 flavor_map = {tag.name.lower(): tag for tag in flavor_tags}
@@ -86,6 +87,7 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                         note = TastingNote(
                             tasting_session_id=db_session.id,
                             flavor_tag_id=flavor_tag.id,
+                            created_by=user_id,
                             **note_data.model_dump(exclude={'flavor_name'})
                         )
                         db.add(note)
@@ -98,7 +100,7 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             )
 
             # Re-fetch with proper eager loading for response serialization
-            db_session = await db.scalar(
+            result = await db.scalar(
                 select(self.model)
                 .options(
                     selectinload(self.model.tasting_notes)
@@ -108,12 +110,15 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 )
                 .where(self.model.id == db_session.id)
             )
+            if not result:
+                raise ValueError("Failed to re-fetch created tasting session")
+            db_session = result
 
             logger.info(
                 "Created tasting session with notes",
                 id=str(db_session.id),
                 user_id=user_id,
-                notes_count=len(tasting_data.tasting_notes)
+                notes_count=len(tasting_data.tasting_notes or [])
             )
             return db_session
         except Exception as e:
@@ -132,7 +137,7 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
     ) -> TastingSession | None:
         """Get a tasting session with all its notes."""
         try:
-            return await db.scalar(
+            result = await db.scalar(
                 select(self.model)
                 .options(
                     selectinload(self.model.tasting_notes)
@@ -142,6 +147,7 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 )
                 .where(self.model.id == id)
             )
+            return result if result else None
         except Exception as e:
             logger.error(
                 "Error getting tasting with notes",

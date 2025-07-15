@@ -1,5 +1,6 @@
 from decimal import Decimal
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text
@@ -7,6 +8,9 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+if TYPE_CHECKING:
+    from .coffee import Coffee, FlavorTag
 
 
 class BrewMethod(str, Enum):

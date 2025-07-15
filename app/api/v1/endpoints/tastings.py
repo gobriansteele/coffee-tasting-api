@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.auth import get_current_user_id, require_user_access
@@ -195,7 +195,7 @@ async def delete_tasting_session(
     session_id: UUID,
     current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
-):
+) -> None:
     """Delete a tasting session."""
     try:
         # Check if tasting session exists and is not already deleted
@@ -204,6 +204,11 @@ async def delete_tasting_session(
             raise HTTPException(status_code=404, detail="Tasting session not found")
 
         # Verify the user owns this tasting session (created by them)
+        if not tasting.created_by:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Resource has no owner"
+            )
         require_user_access(tasting.created_by, current_user_id)
 
         # Perform soft delete

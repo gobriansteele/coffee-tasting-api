@@ -19,7 +19,8 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
         self,
         db: AsyncSession,
         name: str,
-        category: str | None = None
+        category: str | None = None,
+        user_id: str | None = None
     ) -> FlavorTag:
         """Find a flavor tag by name or create it if it doesn't exist.
 
@@ -39,7 +40,8 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
             # Create new tag if not found
             new_tag = self.model(
                 name=name,
-                category=category
+                category=category,
+                created_by=user_id
             )
             db.add(new_tag)
             await db.flush()  # Flush to get ID but don't commit yet
@@ -58,7 +60,8 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
     async def find_or_create_multiple(
         self,
         db: AsyncSession,
-        names: list[str]
+        names: list[str],
+        user_id: str | None = None
     ) -> list[FlavorTag]:
         """Find or create multiple flavor tags by name.
 
@@ -68,7 +71,7 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
             tags = []
             for name in names:
                 if name:  # Skip empty strings
-                    tag = await self.find_or_create_by_name(db, name.strip())
+                    tag = await self.find_or_create_by_name(db, name.strip(), user_id=user_id)
                     tags.append(tag)
             return tags
 
@@ -87,10 +90,11 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
     ) -> FlavorTag | None:
         """Get a flavor tag by name (case-insensitive)."""
         try:
-            return await db.scalar(
+            result = await db.scalar(
                 select(self.model)
                 .where(self.model.name.ilike(name))
             )
+            return result if result else None
         except Exception as e:
             logger.error(
                 "Error getting flavor tag by name",

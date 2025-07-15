@@ -1,5 +1,6 @@
 from decimal import Decimal
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey, Numeric, String, Table, Text
@@ -7,6 +8,9 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+if TYPE_CHECKING:
+    from .tasting import TastingNote, TastingSession
 
 
 class ProcessingMethod(str, Enum):

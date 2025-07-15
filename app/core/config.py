@@ -29,8 +29,10 @@ class Settings(BaseSettings):
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list | str):
+        elif isinstance(v, list):
             return v
+        elif isinstance(v, str):
+            return [v]
         raise ValueError(v)
 
     # Database
@@ -57,6 +59,7 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = Field(
+        default="dev-secret-key-change-in-production",
         description="Secret key for JWT token generation"
     )
     ALGORITHM: str = Field(default="HS256", description="JWT algorithm")

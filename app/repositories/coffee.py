@@ -21,11 +21,12 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
     async def get(self, db: AsyncSession, id: UUID, include_delete: bool = False) -> Coffee | None:
         """Get a single coffee by ID with eager loaded flavor_tags."""
         try:
-            return await db.scalar(
+            result = await db.scalar(
                 select(self.model)
                 .options(selectinload(self.model.flavor_tags))
                 .where(self.model.id == id)
             )
+            return result if result else None
         except Exception as e:
             logger.error(f"Error getting {self.model.__name__}", error=str(e))
             raise
@@ -97,11 +98,12 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
     ) -> Coffee | None:
         """Get a coffee with its flavor tags."""
         try:
-            return await db.scalar(
+            result = await db.scalar(
                 select(self.model)
                 .options(selectinload(self.model.flavor_tags))
                 .where(self.model.id == id)
             )
+            return result if result else None
         except Exception as e:
             logger.error(
                 "Error getting coffee with flavor tags",

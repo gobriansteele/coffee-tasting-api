@@ -29,13 +29,13 @@ def generate_jwt_token(
 ) -> str:
     """
     Generate a JWT token for testing.
-    
+
     Args:
         user_id: User UUID from auth.users table
         email: User email
         role: User role (authenticated, service_role, etc.)
         hours: Token expiration in hours
-    
+
     Returns:
         JWT token string
     """

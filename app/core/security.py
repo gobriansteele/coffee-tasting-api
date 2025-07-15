@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 class SupabaseJWTValidator:
     """JWT token validator for Supabase authentication following official recommendations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not settings.SUPABASE_JWT_SECRET:
             raise ValueError("SUPABASE_JWT_SECRET must be configured")
 
@@ -32,7 +32,7 @@ class SupabaseJWTValidator:
             # Validate using HS256 algorithm and "authenticated" audience as per Supabase docs
             payload = jwt.decode(
                 token,
-                settings.SUPABASE_JWT_SECRET,
+                settings.SUPABASE_JWT_SECRET or "",
                 algorithms=["HS256"],  # Supabase uses HS256, not RS256
                 audience="authenticated",  # Supabase standard audience
                 options={

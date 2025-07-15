@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.auth import get_current_user_id, require_user_access
@@ -101,7 +101,7 @@ async def delete_roaster(
     roaster_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id)
-):
+) -> None:
     """Delete a specific roaster."""
     try:
         # Check if roaster exists and is not already deleted
@@ -110,6 +110,11 @@ async def delete_roaster(
             raise HTTPException(status_code=404, detail="Roaster not found")
 
         # Verify the user owns this roaster (created by them)
+        if not roaster.created_by:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Resource has no owner"
+            )
         require_user_access(roaster.created_by, current_user_id)
 
         # Perform soft delete
