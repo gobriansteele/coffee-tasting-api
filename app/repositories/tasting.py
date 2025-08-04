@@ -14,7 +14,9 @@ from app.schemas.tasting import TastingSessionCreate, TastingSessionUpdate
 logger = get_logger(__name__)
 
 
-class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, TastingSessionUpdate]):
+class TastingRepository(
+    BaseRepository[TastingSession, TastingSessionCreate, TastingSessionUpdate]
+):
     """Repository for tasting session operations."""
 
     def __init__(self) -> None:
@@ -46,6 +48,32 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
         except Exception as e:
             logger.error(
                 "Error getting tastings by user",
+                user_id=user_id,
+                error=str(e)
+            )
+            raise
+
+    async def get_by_user_id_with_eager_loading(
+        self,
+        db: AsyncSession,
+        user_id: str
+    ) -> list[TastingSession]:
+        """Get ALL tasting sessions by user ID with full eager loading."""
+        try:
+            return list(await db.scalars(
+                select(self.model)
+                .options(
+                    selectinload(self.model.tasting_notes)
+                    .selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee)
+                    .selectinload(Coffee.roaster)
+                )
+                .where(self.model.user_id == user_id)
+                .order_by(self.model.created_at.desc())
+            ))
+        except Exception as e:
+            logger.error(
+                "Error getting all tastings by user for recommendations",
                 user_id=user_id,
                 error=str(e)
             )

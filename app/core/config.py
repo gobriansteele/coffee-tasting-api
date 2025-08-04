@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         default=None, description="Supabase JWT secret for token validation"
     )
 
+    # OpenAI/LLM Configuration
+    OPENAI_API_KEY: str | None = Field(
+        default=None, description="OpenAI API key for recommendation analysis"
+    )
+
     # Security
     SECRET_KEY: str = Field(
         default="dev-secret-key-change-in-production",
