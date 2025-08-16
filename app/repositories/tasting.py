@@ -51,8 +51,6 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             )
             raise
 
-<<<<<<< Updated upstream
-=======
     async def get_by_user_id_with_eager_loading(
         self,
         db: AsyncSession,
@@ -104,7 +102,6 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             )
             raise
 
->>>>>>> Stashed changes
     async def create_with_notes(
         self,
         db: AsyncSession,
