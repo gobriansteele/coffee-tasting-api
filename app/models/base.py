@@ -16,10 +16,7 @@ class Base(DeclarativeBase):
     id: Mapped[PY_UUID] = mapped_column(SQL_UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
     # Audit fields
@@ -35,7 +32,4 @@ class Base(DeclarativeBase):
 
     def dict(self) -> dict[str, Any]:
         """Convert model to dictionary."""
-        return {
-            column.name: getattr(self, column.name)
-            for column in self.__table__.columns.values()
-        }
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns.values()}

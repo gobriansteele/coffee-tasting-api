@@ -70,7 +70,6 @@ def create_application() -> FastAPI:
     # Register exception handlers
     register_exception_handlers(app)
 
-
     return app
 
 

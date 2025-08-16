@@ -21,101 +21,78 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
         super().__init__(TastingSession)
 
     async def get_by_user_id(
-        self,
-        db: AsyncSession,
-        user_id: str,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, user_id: str, *, skip: int = 0, limit: int = 100
     ) -> list[TastingSession]:
         """Get all tasting sessions by user ID."""
         try:
-            return list(await db.scalars(
-                select(self.model)
-                .options(
-                    selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag),
-                    selectinload(self.model.coffee)
-                    .selectinload(Coffee.roaster)
+            return list(
+                await db.scalars(
+                    select(self.model)
+                    .options(
+                        selectinload(self.model.tasting_notes).selectinload(TastingNote.flavor_tag),
+                        selectinload(self.model.coffee).selectinload(Coffee.roaster),
+                    )
+                    .where(self.model.user_id == user_id)
+                    .order_by(self.model.created_at.desc())
+                    .offset(skip)
+                    .limit(limit)
                 )
-                .where(self.model.user_id == user_id)
-                .order_by(self.model.created_at.desc())
-                .offset(skip)
-                .limit(limit)
-            ))
-        except Exception as e:
-            logger.error(
-                "Error getting tastings by user",
-                user_id=user_id,
-                error=str(e)
             )
+        except Exception as e:
+            logger.error("Error getting tastings by user", user_id=user_id, error=str(e))
             raise
 
-    async def get_by_user_id_with_eager_loading(
-        self,
-        db: AsyncSession,
-        user_id: str
-    ) -> list[TastingSession]:
+    async def get_by_user_id_with_eager_loading(self, db: AsyncSession, user_id: str) -> list[TastingSession]:
         """Get ALL tasting sessions by user ID with full eager loading."""
         try:
-            return list(await db.scalars(
-                select(self.model)
-                .options(
-                    selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag),
-                    selectinload(self.model.coffee)
-                    .selectinload(Coffee.roaster)
+            return list(
+                await db.scalars(
+                    select(self.model)
+                    .options(
+                        selectinload(self.model.tasting_notes).selectinload(TastingNote.flavor_tag),
+                        selectinload(self.model.coffee).selectinload(Coffee.roaster),
+                    )
+                    .where(self.model.user_id == user_id)
+                    .order_by(self.model.created_at.desc())
                 )
-                .where(self.model.user_id == user_id)
-                .order_by(self.model.created_at.desc())
-            ))
+            )
         except Exception as e:
             logger.error(
-                "Error getting all tastings by user for recommendations",
-                user_id=user_id,
-                error=str(e)
+                "Error getting all tastings by user for recommendations", user_id=user_id, error=str(e)
             )
             raise
 
-    async def get_by_coffee_id(self, db: AsyncSession, user_id: UUID ,coffee_id: UUID, skip: int = 0, limit: int = 100) -> list[TastingSession]:
+    async def get_by_coffee_id(
+        self, db: AsyncSession, user_id: str, coffee_id: UUID, skip: int = 0, limit: int = 100
+    ) -> list[TastingSession]:
         """Get all tasting sessions for a specific coffee."""
         try:
-            return list(await db.scalars(
-                select(self.model)
-                .options(
-                    selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag),
-                    selectinload(self.model.coffee)
-                    .selectinload(Coffee.roaster)
+            return list(
+                await db.scalars(
+                    select(self.model)
+                    .options(
+                        selectinload(self.model.tasting_notes).selectinload(TastingNote.flavor_tag),
+                        selectinload(self.model.coffee).selectinload(Coffee.roaster),
+                    )
+                    .where(self.model.coffee_id == coffee_id)
+                    .where(self.model.user_id == user_id)
+                    .order_by(self.model.created_at.desc())
+                    .offset(skip)
+                    .limit(limit)
                 )
-                .where(self.model.coffee_id == coffee_id)
-                .where(self.model.user_id == user_id)
-                .order_by(self.model.created_at.desc())
-                .offset(skip)
-                .limit(limit)
-            ))
-        except Exception as e:
-            logger.error(
-                "Error getting tastings by coffee",
-                coffee_id=str(coffee_id),
-                error=str(e)
             )
+        except Exception as e:
+            logger.error("Error getting tastings by coffee", coffee_id=str(coffee_id), error=str(e))
             raise
 
     async def create_with_notes(
-        self,
-        db: AsyncSession,
-        *,
-        tasting_data: TastingSessionCreate,
-        user_id: str
+        self, db: AsyncSession, *, tasting_data: TastingSessionCreate, user_id: str
     ) -> TastingSession:
         """Create a tasting session with associated notes."""
         try:
             # Create the tasting session directly
             db_session = self.model(
-                **tasting_data.model_dump(exclude={'tasting_notes'}),
-                user_id=user_id,
-                created_by=user_id
+                **tasting_data.model_dump(exclude={"tasting_notes"}), user_id=user_id, created_by=user_id
             )
             db.add(db_session)
             await db.flush()  # Flush to get the session ID
@@ -126,7 +103,9 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 flavor_names = [note.flavor_name for note in tasting_data.tasting_notes]
 
                 # Find or create flavor tags
-                flavor_tags = await flavor_tag_repository.find_or_create_multiple(db, flavor_names, user_id=user_id)
+                flavor_tags = await flavor_tag_repository.find_or_create_multiple(
+                    db, flavor_names, user_id=user_id
+                )
 
                 # Create mapping of flavor name to flavor tag
                 flavor_map = {tag.name.lower(): tag for tag in flavor_tags}
@@ -139,25 +118,20 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                             tasting_session_id=db_session.id,
                             flavor_tag_id=flavor_tag.id,
                             created_by=user_id,
-                            **note_data.model_dump(exclude={'flavor_name'})
+                            **note_data.model_dump(exclude={"flavor_name"}),
                         )
                         db.add(note)
 
             await db.commit()
             # Refresh with eager loading of tasting notes and their flavor tags
-            await db.refresh(
-                db_session,
-                ['tasting_notes']
-            )
+            await db.refresh(db_session, ["tasting_notes"])
 
             # Re-fetch with proper eager loading for response serialization
             result = await db.scalar(
                 select(self.model)
                 .options(
-                    selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag),
-                    selectinload(self.model.coffee)
-                    .selectinload(Coffee.roaster)
+                    selectinload(self.model.tasting_notes).selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee).selectinload(Coffee.roaster),
                 )
                 .where(self.model.id == db_session.id)
             )
@@ -169,59 +143,36 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
                 "Created tasting session with notes",
                 id=str(db_session.id),
                 user_id=user_id,
-                notes_count=len(tasting_data.tasting_notes or [])
+                notes_count=len(tasting_data.tasting_notes or []),
             )
             return db_session
         except Exception as e:
             await db.rollback()
-            logger.error(
-                "Error creating tasting session",
-                user_id=user_id,
-                error=str(e)
-            )
+            logger.error("Error creating tasting session", user_id=user_id, error=str(e))
             raise
 
-    async def get_with_notes(
-        self,
-        db: AsyncSession,
-        id: UUID
-    ) -> TastingSession | None:
+    async def get_with_notes(self, db: AsyncSession, id: UUID) -> TastingSession | None:
         """Get a tasting session with all its notes."""
         try:
             result = await db.scalar(
                 select(self.model)
                 .options(
-                    selectinload(self.model.tasting_notes)
-                    .selectinload(TastingNote.flavor_tag),
-                    selectinload(self.model.coffee)
-                    .selectinload(Coffee.roaster)
+                    selectinload(self.model.tasting_notes).selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee).selectinload(Coffee.roaster),
                 )
                 .where(self.model.id == id)
             )
             return result if result else None
         except Exception as e:
-            logger.error(
-                "Error getting tasting with notes",
-                id=str(id),
-                error=str(e)
-            )
+            logger.error("Error getting tasting with notes", id=str(id), error=str(e))
             raise
 
-    async def delete_by_id(
-        self,
-        db: AsyncSession,
-        *,
-        id: UUID,
-        user_id: str
-    ) -> TastingSession:
+    async def delete_by_id(self, db: AsyncSession, *, id: UUID, user_id: str) -> TastingSession:
         """Delete a tasting session by ID, ensuring it belongs to the user."""
         try:
             # Get the tasting if it belongs to the user
             tasting = await db.scalar(
-                select(self.model).where(
-                    self.model.id == id,
-                    self.model.user_id == user_id
-                )
+                select(self.model).where(self.model.id == id, self.model.user_id == user_id)
             )
 
             if not tasting:
@@ -231,60 +182,31 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             await db.delete(tasting)
             await db.commit()
 
-            logger.info(
-                "Deleted tasting session",
-                id=str(id),
-                user_id=user_id
-            )
+            logger.info("Deleted tasting session", id=str(id), user_id=user_id)
             return tasting
         except Exception as e:
             await db.rollback()
-            logger.error(
-                "Error deleting tasting session",
-                id=str(id),
-                user_id=user_id,
-                error=str(e)
-            )
+            logger.error("Error deleting tasting session", id=str(id), user_id=user_id, error=str(e))
             raise
 
-    async def count_by_user(
-        self,
-        db: AsyncSession,
-        user_id: str
-    ) -> int:
+    async def count_by_user(self, db: AsyncSession, user_id: str) -> int:
         """Count total tasting sessions for a user."""
         try:
-            count = await db.scalar(
-                select(func.count(self.model.id))
-                .where(self.model.user_id == user_id)
-            )
+            count = await db.scalar(select(func.count(self.model.id)).where(self.model.user_id == user_id))
             return count or 0
         except Exception as e:
-            logger.error(
-                "Error counting tastings for user",
-                user_id=user_id,
-                error=str(e)
-            )
+            logger.error("Error counting tastings for user", user_id=user_id, error=str(e))
             raise
 
-    async def count_by_coffee(
-        self,
-        db: AsyncSession,
-        coffee_id: UUID
-    ) -> int:
+    async def count_by_coffee(self, db: AsyncSession, coffee_id: UUID) -> int:
         """Count total tasting sessions for a specific coffee."""
         try:
             count = await db.scalar(
-                select(func.count(self.model.id))
-                .where(self.model.coffee_id == coffee_id)
+                select(func.count(self.model.id)).where(self.model.coffee_id == coffee_id)
             )
             return count or 0
         except Exception as e:
-            logger.error(
-                "Error counting tastings for coffee",
-                coffee_id=str(coffee_id),
-                error=str(e)
-            )
+            logger.error("Error counting tastings for coffee", coffee_id=str(coffee_id), error=str(e))
             raise
 
 

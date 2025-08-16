@@ -41,7 +41,7 @@ class SupabaseJWTValidator:
                     "verify_nbf": True,
                     "verify_iat": True,
                     "verify_aud": True,  # Enable audience verification
-                }
+                },
             )
 
             # Validate required Supabase claims

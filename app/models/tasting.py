@@ -40,6 +40,7 @@ class GrindSize(str, Enum):
 
 class TastingSession(Base):
     """A coffee tasting session with brewing parameters."""
+
     __tablename__ = "tasting_session"
 
     # Basic info
@@ -47,13 +48,9 @@ class TastingSession(Base):
     user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)  # From auth system
 
     # Brewing parameters
-    brew_method: Mapped[BrewMethod] = mapped_column(
-        ENUM(BrewMethod, name="brew_method_enum"),
-        nullable=False
-    )
+    brew_method: Mapped[BrewMethod] = mapped_column(ENUM(BrewMethod, name="brew_method_enum"), nullable=False)
     grind_size: Mapped[GrindSize | None] = mapped_column(
-        ENUM(GrindSize, name="grind_size_enum"),
-        nullable=True
+        ENUM(GrindSize, name="grind_size_enum"), nullable=True
     )
 
     # Measurements
@@ -74,7 +71,9 @@ class TastingSession(Base):
 
     # Relationships
     coffee: Mapped["Coffee"] = relationship("Coffee", back_populates="tasting_sessions")
-    tasting_notes: Mapped[list["TastingNote"]] = relationship("TastingNote", back_populates="tasting_session", cascade="all, delete-orphan")
+    tasting_notes: Mapped[list["TastingNote"]] = relationship(
+        "TastingNote", back_populates="tasting_session", cascade="all, delete-orphan"
+    )
 
     # Properties for Pydantic serialization
     @property
@@ -90,9 +89,12 @@ class TastingSession(Base):
 
 class TastingNote(Base):
     """Individual flavor notes from a tasting session."""
+
     __tablename__ = "tasting_note"
 
-    tasting_session_id: Mapped[UUID] = mapped_column(ForeignKey("tasting_session.id"), nullable=False, index=True)
+    tasting_session_id: Mapped[UUID] = mapped_column(
+        ForeignKey("tasting_session.id"), nullable=False, index=True
+    )
     flavor_tag_id: Mapped[UUID] = mapped_column(ForeignKey("flavortag.id"), nullable=False, index=True)
 
     # Intensity and characteristics

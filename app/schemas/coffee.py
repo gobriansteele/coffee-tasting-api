@@ -10,6 +10,7 @@ from .flavor_tag import FlavorTagResponse
 
 class CoffeeBase(BaseModel):
     """Base coffee schema with common fields."""
+
     name: str = Field(..., min_length=1, max_length=255, description="Coffee name")
     roaster_id: UUID = Field(..., description="ID of the roaster")
 
@@ -36,11 +37,13 @@ class CoffeeBase(BaseModel):
 
 class CoffeeCreate(CoffeeBase):
     """Schema for creating a new coffee."""
+
     flavor_tags: list[str] = Field(default_factory=list, description="List of flavor tag names")
 
 
 class CoffeeUpdate(BaseModel):
     """Schema for updating an existing coffee."""
+
     name: str | None = Field(None, min_length=1, max_length=255, description="Coffee name")
     roaster_id: UUID | None = Field(None, description="ID of the roaster")
 
@@ -67,6 +70,7 @@ class CoffeeUpdate(BaseModel):
 
 class CoffeeResponse(CoffeeBase):
     """Schema for coffee responses."""
+
     id: UUID
     created_at: datetime
     updated_at: datetime
@@ -78,6 +82,7 @@ class CoffeeResponse(CoffeeBase):
 
 class CoffeeListResponse(BaseModel):
     """Schema for coffee list responses."""
+
     coffees: list[CoffeeResponse]
     total: int
     page: int

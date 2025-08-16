@@ -33,15 +33,16 @@ class RoastLevel(str, Enum):
 
 # Association table for coffee flavor tags
 coffee_flavors = Table(
-    'coffee_flavors',
+    "coffee_flavors",
     Base.metadata,
-    Column('coffee_id', ForeignKey('coffee.id'), primary_key=True),
-    Column('flavor_tag_id', ForeignKey('flavortag.id'), primary_key=True)
+    Column("coffee_id", ForeignKey("coffee.id"), primary_key=True),
+    Column("flavor_tag_id", ForeignKey("flavortag.id"), primary_key=True),
 )
 
 
 class Roaster(Base):
     """Coffee roaster model."""
+
     __tablename__ = "roaster"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -55,6 +56,7 @@ class Roaster(Base):
 
 class Coffee(Base):
     """Coffee model representing a specific coffee offering."""
+
     __tablename__ = "coffee"
 
     # Basic info
@@ -70,15 +72,13 @@ class Coffee(Base):
 
     # Processing
     processing_method: Mapped[ProcessingMethod | None] = mapped_column(
-        ENUM(ProcessingMethod, name="processing_method_enum"),
-        nullable=True
+        ENUM(ProcessingMethod, name="processing_method_enum"), nullable=True
     )
     variety: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Coffee variety/cultivar
 
     # Roasting
     roast_level: Mapped[RoastLevel | None] = mapped_column(
-        ENUM(RoastLevel, name="roast_level_enum"),
-        nullable=True
+        ENUM(RoastLevel, name="roast_level_enum"), nullable=True
     )
     roast_date: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Flexible date format
 
@@ -90,17 +90,24 @@ class Coffee(Base):
     # Relationships
     roaster: Mapped["Roaster"] = relationship("Roaster", back_populates="coffees")
     tasting_sessions: Mapped[list["TastingSession"]] = relationship("TastingSession", back_populates="coffee")
-    flavor_tags: Mapped[list["FlavorTag"]] = relationship("FlavorTag", secondary=coffee_flavors, back_populates="coffees")
+    flavor_tags: Mapped[list["FlavorTag"]] = relationship(
+        "FlavorTag", secondary=coffee_flavors, back_populates="coffees"
+    )
 
 
 class FlavorTag(Base):
     """Flavor descriptors for coffee."""
+
     __tablename__ = "flavortag"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    category: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., "fruity", "nutty", "floral"
+    category: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # e.g., "fruity", "nutty", "floral"
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    coffees: Mapped[list["Coffee"]] = relationship("Coffee", secondary=coffee_flavors, back_populates="flavor_tags")
+    coffees: Mapped[list["Coffee"]] = relationship(
+        "Coffee", secondary=coffee_flavors, back_populates="flavor_tags"
+    )
     tasting_notes: Mapped[list["TastingNote"]] = relationship("TastingNote", back_populates="flavor_tag")

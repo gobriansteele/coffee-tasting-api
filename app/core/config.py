@@ -1,4 +1,3 @@
-
 from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,7 +20,7 @@ class Settings(BaseSettings):
             "http://localhost:8080",
             "http://localhost:5173",  # Vite default
         ],
-        description="CORS allowed origins"
+        description="CORS allowed origins",
     )
 
     @classmethod
@@ -36,31 +35,20 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     # Database
-    DATABASE_URL: PostgresDsn | None = Field(
-        default=None, description="Database connection URL"
-    )
-    DATABASE_URL_TEST: PostgresDsn | None = Field(
-        default=None, description="Test database connection URL"
-    )
+    DATABASE_URL: PostgresDsn | None = Field(default=None, description="Database connection URL")
+    DATABASE_URL_TEST: PostgresDsn | None = Field(default=None, description="Test database connection URL")
 
     # Supabase
-    SUPABASE_URL: str | None = Field(
-        default=None, description="Supabase project URL"
-    )
-    SUPABASE_KEY: str | None = Field(
-        default=None, description="Supabase anon key"
-    )
-    SUPABASE_SERVICE_ROLE_KEY: str | None = Field(
-        default=None, description="Supabase service role key"
-    )
+    SUPABASE_URL: str | None = Field(default=None, description="Supabase project URL")
+    SUPABASE_KEY: str | None = Field(default=None, description="Supabase anon key")
+    SUPABASE_SERVICE_ROLE_KEY: str | None = Field(default=None, description="Supabase service role key")
     SUPABASE_JWT_SECRET: str | None = Field(
         default=None, description="Supabase JWT secret for token validation"
     )
 
     # Security
     SECRET_KEY: str = Field(
-        default="dev-secret-key-change-in-production",
-        description="Secret key for JWT token generation"
+        default="dev-secret-key-change-in-production", description="Secret key for JWT token generation"
     )
     ALGORITHM: str = Field(default="HS256", description="JWT algorithm")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
@@ -68,17 +56,11 @@ class Settings(BaseSettings):
     )
 
     # Rate Limiting
-    RATE_LIMIT_REQUESTS: int = Field(
-        default=100, description="Rate limit requests per period"
-    )
-    RATE_LIMIT_PERIOD: int = Field(
-        default=60, description="Rate limit period in seconds"
-    )
+    RATE_LIMIT_REQUESTS: int = Field(default=100, description="Rate limit requests per period")
+    RATE_LIMIT_PERIOD: int = Field(default=60, description="Rate limit period in seconds")
 
     # OpenAI
-    OPENAI_API_KEY: str | None = Field(
-        default=None, description="OpenAI API key for recommendation engine"
-    )
+    OPENAI_API_KEY: str | None = Field(default=None, description="OpenAI API key for recommendation engine")
 
     @property
     def is_development(self) -> bool:
@@ -92,11 +74,7 @@ class Settings(BaseSettings):
     def is_testing(self) -> bool:
         return self.ENVIRONMENT.lower() in ("testing", "test")
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        case_sensitive=True,
-        env_parse_none_str="None"
-    )
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, env_parse_none_str="None")
 
 
 settings = Settings()

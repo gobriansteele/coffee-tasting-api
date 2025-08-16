@@ -16,11 +16,7 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
         super().__init__(FlavorTag)
 
     async def find_or_create_by_name(
-        self,
-        db: AsyncSession,
-        name: str,
-        category: str | None = None,
-        user_id: str | None = None
+        self, db: AsyncSession, name: str, category: str | None = None, user_id: str | None = None
     ) -> FlavorTag:
         """Find a flavor tag by name or create it if it doesn't exist.
 
@@ -28,21 +24,14 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
         """
         try:
             # First try to find existing tag (case-insensitive)
-            existing_tag = await db.scalar(
-                select(self.model)
-                .where(self.model.name.ilike(name))
-            )
+            existing_tag = await db.scalar(select(self.model).where(self.model.name.ilike(name)))
 
             if existing_tag:
                 logger.debug(f"Found existing flavor tag: {existing_tag.name}")
                 return existing_tag
 
             # Create new tag if not found
-            new_tag = self.model(
-                name=name,
-                category=category,
-                created_by=user_id
-            )
+            new_tag = self.model(name=name, category=category, created_by=user_id)
             db.add(new_tag)
             await db.flush()  # Flush to get ID but don't commit yet
 
@@ -50,18 +39,11 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
             return new_tag
 
         except Exception as e:
-            logger.error(
-                "Error in find_or_create_by_name",
-                name=name,
-                error=str(e)
-            )
+            logger.error("Error in find_or_create_by_name", name=name, error=str(e))
             raise
 
     async def find_or_create_multiple(
-        self,
-        db: AsyncSession,
-        names: list[str],
-        user_id: str | None = None
+        self, db: AsyncSession, names: list[str], user_id: str | None = None
     ) -> list[FlavorTag]:
         """Find or create multiple flavor tags by name.
 
@@ -76,58 +58,33 @@ class FlavorTagRepository(BaseRepository[FlavorTag, FlavorTagCreate, FlavorTagUp
             return tags
 
         except Exception as e:
-            logger.error(
-                "Error in find_or_create_multiple",
-                names=names,
-                error=str(e)
-            )
+            logger.error("Error in find_or_create_multiple", names=names, error=str(e))
             raise
 
-    async def get_by_name(
-        self,
-        db: AsyncSession,
-        name: str
-    ) -> FlavorTag | None:
+    async def get_by_name(self, db: AsyncSession, name: str) -> FlavorTag | None:
         """Get a flavor tag by name (case-insensitive)."""
         try:
-            result = await db.scalar(
-                select(self.model)
-                .where(self.model.name.ilike(name))
-            )
+            result = await db.scalar(select(self.model).where(self.model.name.ilike(name)))
             return result if result else None
         except Exception as e:
-            logger.error(
-                "Error getting flavor tag by name",
-                name=name,
-                error=str(e)
-            )
+            logger.error("Error getting flavor tag by name", name=name, error=str(e))
             raise
 
     async def search(
-        self,
-        db: AsyncSession,
-        query: str,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, query: str, *, skip: int = 0, limit: int = 100
     ) -> list[FlavorTag]:
         """Search flavor tags by name or category."""
         try:
-            return list(await db.scalars(
-                select(self.model)
-                .where(
-                    self.model.name.ilike(f"%{query}%") |
-                    self.model.category.ilike(f"%{query}%")
+            return list(
+                await db.scalars(
+                    select(self.model)
+                    .where(self.model.name.ilike(f"%{query}%") | self.model.category.ilike(f"%{query}%"))
+                    .offset(skip)
+                    .limit(limit)
                 )
-                .offset(skip)
-                .limit(limit)
-            ))
-        except Exception as e:
-            logger.error(
-                "Error searching flavor tags",
-                query=query,
-                error=str(e)
             )
+        except Exception as e:
+            logger.error("Error searching flavor tags", query=query, error=str(e))
             raise
 
 

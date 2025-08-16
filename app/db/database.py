@@ -19,7 +19,7 @@ convention = {
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s"
+    "pk": "pk_%(table_name)s",
 }
 
 Base.metadata = MetaData(naming_convention=convention)
@@ -45,7 +45,11 @@ def create_database_engines() -> None:
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
     # Log database URL (masked)
-    masked_url = database_url.split('@')[0].rsplit(':', 1)[0] + ':***@' + database_url.split('@')[1] if '@' in database_url else database_url
+    masked_url = (
+        database_url.split("@")[0].rsplit(":", 1)[0] + ":***@" + database_url.split("@")[1]
+        if "@" in database_url
+        else database_url
+    )
     logger.info("Connecting to database", url=masked_url)
 
     # Async engine (primary)

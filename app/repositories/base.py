@@ -22,12 +22,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: type[ModelType]):
         self.model = model
 
-    async def get(
-        self,
-        db: AsyncSession,
-        id: UUID,
-        include_deleted: bool = False
-    ) -> ModelType | None:
+    async def get(self, db: AsyncSession, id: UUID, include_deleted: bool = False) -> ModelType | None:
         """Get a single record by ID."""
         try:
             obj = await db.get(self.model, id)
@@ -39,38 +34,27 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             raise
 
     async def get_multi(
-        self,
-        db: AsyncSession,
-        *,
-        skip: int = 0,
-        limit: int = 100,
-        include_deleted: bool = False
+        self, db: AsyncSession, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> list[ModelType]:
         """Get multiple records with pagination."""
         try:
             query = select(self.model)
             if not include_deleted:
                 query = query.where(self.model.deleted_at.is_(None))
-            return list(await db.scalars(
-                query.offset(skip).limit(limit)
-            ))
+            return list(await db.scalars(query.offset(skip).limit(limit)))
         except Exception as e:
             logger.error(f"Error getting multiple {self.model.__name__}", error=str(e))
             raise
 
     async def create(
-        self,
-        db: AsyncSession,
-        *,
-        obj_in: CreateSchemaType,
-        current_user_id: str | None = None
+        self, db: AsyncSession, *, obj_in: CreateSchemaType, current_user_id: str | None = None
     ) -> ModelType:
         """Create a new record."""
         try:
             obj_in_data = obj_in.model_dump()
             if current_user_id:
-                obj_in_data['created_by'] = current_user_id
-                obj_in_data['updated_by'] = current_user_id
+                obj_in_data["created_by"] = current_user_id
+                obj_in_data["updated_by"] = current_user_id
             db_obj = self.model(**obj_in_data)
             db.add(db_obj)
             await db.commit()
@@ -88,7 +72,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         *,
         db_obj: ModelType,
         obj_in: UpdateSchemaType | dict[str, Any],
-        current_user_id: str | None = None
+        current_user_id: str | None = None,
     ) -> ModelType:
         """Update an existing record."""
         try:
@@ -98,7 +82,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 update_data = obj_in.model_dump(exclude_unset=True)
 
             if current_user_id:
-                update_data['updated_by'] = current_user_id
+                update_data["updated_by"] = current_user_id
 
             for field, value in update_data.items():
                 if hasattr(db_obj, field):
@@ -115,12 +99,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             raise
 
     async def delete(
-        self,
-        db: AsyncSession,
-        *,
-        id: UUID,
-        current_user_id: str | None = None,
-        hard_delete: bool = False
+        self, db: AsyncSession, *, id: UUID, current_user_id: str | None = None, hard_delete: bool = False
     ) -> ModelType:
         """Soft delete a record by ID."""
         try:
@@ -169,13 +148,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             logger.error(f"Error checking existence of {self.model.__name__}", error=str(e))
             raise
 
-    async def restore(
-        self,
-        db: AsyncSession,
-        *,
-        id: UUID,
-        current_user_id: str | None = None
-    ) -> ModelType:
+    async def restore(self, db: AsyncSession, *, id: UUID, current_user_id: str | None = None) -> ModelType:
         """Restore a soft-deleted record."""
         try:
             obj = await self.get(db, id, include_deleted=True)

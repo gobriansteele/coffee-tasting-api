@@ -17,7 +17,7 @@ router = APIRouter()
 async def create_roaster(
     roaster_data: RoasterCreate,
     db: AsyncSession = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_current_user_id),
 ) -> RoasterResponse:
     """Create a new roaster."""
     try:
@@ -25,8 +25,7 @@ async def create_roaster(
         existing_roaster = await roaster_repository.get_by_name(db, roaster_data.name)
         if existing_roaster:
             raise HTTPException(
-                status_code=400,
-                detail=f"Roaster with name '{roaster_data.name}' already exists"
+                status_code=400, detail=f"Roaster with name '{roaster_data.name}' already exists"
             )
 
         # Create the roaster
@@ -49,7 +48,7 @@ async def list_roasters(
     search: str = Query(None, description="Search roasters by name"),
     location: str = Query(None, description="Filter roasters by location"),
     db: AsyncSession = Depends(get_db),
-    _current_user_id: str = Depends(get_current_user_id)
+    _current_user_id: str = Depends(get_current_user_id),
 ) -> RoasterListResponse:
     """List roasters with optional filtering and pagination."""
     try:
@@ -66,7 +65,7 @@ async def list_roasters(
             roasters=[RoasterResponse.model_validate(roaster) for roaster in roasters],
             total=total,
             page=skip // limit + 1,
-            size=len(roasters)
+            size=len(roasters),
         )
 
     except Exception as e:
@@ -76,9 +75,7 @@ async def list_roasters(
 
 @router.get("/{roaster_id}", response_model=RoasterResponse)
 async def get_roaster(
-    roaster_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id)
+    roaster_id: UUID, db: AsyncSession = Depends(get_db), current_user_id: str = Depends(get_current_user_id)
 ) -> RoasterResponse:
     """Get a specific roaster by ID."""
 
@@ -98,9 +95,7 @@ async def get_roaster(
 
 @router.delete("/{roaster_id}", status_code=204)
 async def delete_roaster(
-    roaster_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user_id: str = Depends(get_current_user_id)
+    roaster_id: UUID, db: AsyncSession = Depends(get_db), current_user_id: str = Depends(get_current_user_id)
 ) -> None:
     """Delete a specific roaster."""
     try:
@@ -111,10 +106,7 @@ async def delete_roaster(
 
         # Verify the user owns this roaster (created by them)
         if not roaster.created_by:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Resource has no owner"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Resource has no owner")
         require_user_access(roaster.created_by, current_user_id)
 
         # Perform soft delete

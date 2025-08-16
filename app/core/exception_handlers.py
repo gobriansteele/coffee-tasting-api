@@ -34,9 +34,7 @@ async def api_exception_handler(request: Request, exc: APIException) -> JSONResp
     )
 
 
-async def validation_exception_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Handle request validation errors."""
     logger.error(
         "Validation error occurred",

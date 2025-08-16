@@ -12,9 +12,7 @@ logger = get_logger(__name__)
 security = HTTPBearer(auto_error=False)
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> dict[str, Any]:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict[str, Any]:
     """
     Dependency to get the current authenticated user from JWT token.
 
@@ -55,9 +53,7 @@ async def get_current_user(
         ) from e
 
 
-async def get_current_user_id(
-    current_user: dict[str, Any] = Depends(get_current_user)
-) -> str:
+async def get_current_user_id(current_user: dict[str, Any] = Depends(get_current_user)) -> str:
     """
     Dependency to get just the current user ID.
 
@@ -69,10 +65,7 @@ async def get_current_user_id(
     """
     user_id = current_user.get("user_id")
     if not user_id or not isinstance(user_id, str):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID in token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user ID in token")
     return cast(str, user_id)
 
 
@@ -99,7 +92,7 @@ def require_user_access(resource_user_id: str, current_user_id: str) -> None:
 
 # Optional dependency for endpoints that can work with or without auth
 async def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict[str, Any] | None:
     """
     Optional authentication dependency.
@@ -120,4 +113,3 @@ async def get_current_user_optional(
         # Log the error but don't raise - this is optional auth
         logger.debug("Optional authentication failed, proceeding without auth")
         return None
-

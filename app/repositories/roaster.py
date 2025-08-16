@@ -1,4 +1,3 @@
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,20 +26,12 @@ class RoasterRepository(BaseRepository[Roaster, RoasterCreate, RoasterUpdate]):
             raise
 
     async def search_by_name(
-        self,
-        db: AsyncSession,
-        name_query: str,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, name_query: str, *, skip: int = 0, limit: int = 100
     ) -> list[Roaster]:
         """Search roasters by name (case-insensitive partial match)."""
         try:
             stmt = (
-                select(self.model)
-                .where(self.model.name.ilike(f"%{name_query}%"))
-                .offset(skip)
-                .limit(limit)
+                select(self.model).where(self.model.name.ilike(f"%{name_query}%")).offset(skip).limit(limit)
             )
             result = await db.execute(stmt)
             return list(result.scalars().all())
@@ -49,20 +40,12 @@ class RoasterRepository(BaseRepository[Roaster, RoasterCreate, RoasterUpdate]):
             raise
 
     async def get_by_location(
-        self,
-        db: AsyncSession,
-        location: str,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, location: str, *, skip: int = 0, limit: int = 100
     ) -> list[Roaster]:
         """Get roasters by location."""
         try:
             stmt = (
-                select(self.model)
-                .where(self.model.location.ilike(f"%{location}%"))
-                .offset(skip)
-                .limit(limit)
+                select(self.model).where(self.model.location.ilike(f"%{location}%")).offset(skip).limit(limit)
             )
             result = await db.execute(stmt)
             return list(result.scalars().all())

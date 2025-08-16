@@ -10,6 +10,7 @@ from .flavor_tag import FlavorTagResponse
 
 class TastingNoteBase(BaseModel):
     """Base tasting note schema."""
+
     intensity: int | None = Field(None, ge=1, le=10, description="Intensity (1-10)")
     notes: str | None = Field(None, description="Additional notes about this flavor")
     aroma: bool = Field(False, description="Detected in aroma")
@@ -19,11 +20,13 @@ class TastingNoteBase(BaseModel):
 
 class TastingNoteCreate(TastingNoteBase):
     """Schema for creating a tasting note."""
+
     flavor_name: str = Field(..., min_length=1, description="Name of the flavor detected")
 
 
 class TastingNoteResponse(TastingNoteBase):
     """Schema for tasting note responses."""
+
     id: UUID
     tasting_session_id: UUID
     flavor_tag: FlavorTagResponse
@@ -36,6 +39,7 @@ class TastingNoteResponse(TastingNoteBase):
 
 class TastingSessionBase(BaseModel):
     """Base tasting session schema."""
+
     coffee_id: UUID = Field(..., description="ID of the coffee")
 
     # Brewing parameters
@@ -61,11 +65,13 @@ class TastingSessionBase(BaseModel):
 
 class TastingSessionCreate(TastingSessionBase):
     """Schema for creating a tasting session."""
+
     tasting_notes: list[TastingNoteCreate] | None = Field(default_factory=list, description="Tasting notes")
 
 
 class TastingSessionUpdate(BaseModel):
     """Schema for updating a tasting session."""
+
     coffee_id: UUID | None = Field(None, description="ID of the coffee")
 
     # Brewing parameters
@@ -91,6 +97,7 @@ class TastingSessionUpdate(BaseModel):
 
 class TastingSessionResponse(TastingSessionBase):
     """Schema for tasting session responses."""
+
     id: UUID
     coffee_name: str
     roaster_name: str
@@ -105,6 +112,7 @@ class TastingSessionResponse(TastingSessionBase):
 
 class TastingSessionListResponse(BaseModel):
     """Schema for tasting session list responses."""
+
     tastings: list[TastingSessionResponse]
     total: int
     page: int

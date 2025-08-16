@@ -10,6 +10,7 @@ from jose import jwt as jose_jwt
 # Load environment variables
 load_dotenv()
 
+
 async def test_jwt_validation():
     """Test JWT validation with different scenarios."""
 
@@ -29,7 +30,9 @@ async def test_jwt_validation():
 
     # Try to decode without verification
     try:
-        unverified_payload = jose_jwt.decode(test_token, key="", options={"verify_signature": False, "verify_aud": False, "verify_exp": False})
+        unverified_payload = jose_jwt.decode(
+            test_token, key="", options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
+        )
         print("\nUnverified payload:")
         for key, value in unverified_payload.items():
             print(f"  {key}: {value}")
@@ -49,7 +52,7 @@ async def test_jwt_validation():
                 "verify_signature": True,
                 "verify_exp": True,
                 "verify_aud": True,
-            }
+            },
         )
         print("✓ Signature verification successful!")
         print(f"User ID: {verified_payload.get('sub')}")
@@ -66,11 +69,14 @@ async def test_jwt_validation():
                     "verify_signature": True,
                     "verify_exp": True,
                     "verify_aud": False,
-                }
+                },
             )
-            print(f"\nToken validates without audience check. Audience in token: {unverified_payload.get('aud')}")
+            print(
+                f"\nToken validates without audience check. Audience in token: {unverified_payload.get('aud')}"
+            )
         except Exception as e2:
             print(f"Still fails without audience check: {e2}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_jwt_validation())

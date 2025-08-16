@@ -6,9 +6,8 @@ Create Date: 2025-06-22 14:44:28.571963
 
 """
 
-
 # revision identifiers, used by Alembic.
-revision = '0ca0ad41b915'
+revision = "0ca0ad41b915"
 down_revision = None
 branch_labels = None
 depends_on = None

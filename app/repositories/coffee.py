@@ -22,9 +22,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         """Get a single coffee by ID with eager loaded flavor_tags."""
         try:
             result = await db.scalar(
-                select(self.model)
-                .options(selectinload(self.model.flavor_tags))
-                .where(self.model.id == id)
+                select(self.model).options(selectinload(self.model.flavor_tags)).where(self.model.id == id)
             )
             return result if result else None
         except Exception as e:
@@ -32,21 +30,15 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             raise
 
     async def get_multi(
-        self,
-        db: AsyncSession,
-        *,
-        skip: int = 0,
-        limit: int = 100,
-        include_deleted: bool = False
+        self, db: AsyncSession, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> list[Coffee]:
         """Get multiple records with pagination and eager load flavor_tags."""
         try:
-            return list(await db.scalars(
-                select(self.model)
-                .options(selectinload(self.model.flavor_tags))
-                .offset(skip)
-                .limit(limit)
-            ))
+            return list(
+                await db.scalars(
+                    select(self.model).options(selectinload(self.model.flavor_tags)).offset(skip).limit(limit)
+                )
+            )
         except Exception as e:
             logger.error(f"Error getting multiple {self.model.__name__}", error=str(e))
             raise
@@ -57,15 +49,15 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         *,
         coffee_data: CoffeeCreate,
         flavor_tags: list[FlavorTag],
-        current_user_id: str | None = None
+        current_user_id: str | None = None,
     ) -> Coffee:
         """Create a coffee with associated flavor tags."""
         try:
             # Create coffee data without flavor_tags field
-            coffee_dict = coffee_data.model_dump(exclude={'flavor_tags'})
+            coffee_dict = coffee_data.model_dump(exclude={"flavor_tags"})
             if current_user_id:
-                coffee_dict['created_by'] = current_user_id
-                coffee_dict['updated_by'] = current_user_id
+                coffee_dict["created_by"] = current_user_id
+                coffee_dict["updated_by"] = current_user_id
             db_coffee = self.model(**coffee_dict)
 
             # Associate flavor tags
@@ -73,57 +65,36 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
 
             db.add(db_coffee)
             await db.commit()
-            await db.refresh(db_coffee, ['flavor_tags'])
+            await db.refresh(db_coffee, ["flavor_tags"])
 
             logger.info(
                 "Created coffee with flavor tags",
                 coffee_id=str(db_coffee.id),
                 name=db_coffee.name,
-                flavor_count=len(flavor_tags)
+                flavor_count=len(flavor_tags),
             )
             return db_coffee
 
         except Exception as e:
             await db.rollback()
-            logger.error(
-                "Error creating coffee with flavor tags",
-                error=str(e)
-            )
+            logger.error("Error creating coffee with flavor tags", error=str(e))
             raise
 
-    async def get_with_flavor_tags(
-        self,
-        db: AsyncSession,
-        id: UUID
-    ) -> Coffee | None:
+    async def get_with_flavor_tags(self, db: AsyncSession, id: UUID) -> Coffee | None:
         """Get a coffee with its flavor tags."""
         try:
             result = await db.scalar(
-                select(self.model)
-                .options(selectinload(self.model.flavor_tags))
-                .where(self.model.id == id)
+                select(self.model).options(selectinload(self.model.flavor_tags)).where(self.model.id == id)
             )
             return result if result else None
         except Exception as e:
-            logger.error(
-                "Error getting coffee with flavor tags",
-                id=str(id),
-                error=str(e)
-            )
+            logger.error("Error getting coffee with flavor tags", id=str(id), error=str(e))
             raise
 
-    async def get_by_name_and_roaster(
-        self,
-        db: AsyncSession,
-        name: str,
-        roaster_id: UUID
-    ) -> Coffee | None:
+    async def get_by_name_and_roaster(self, db: AsyncSession, name: str, roaster_id: UUID) -> Coffee | None:
         """Get coffee by name and roaster ID."""
         try:
-            stmt = select(self.model).where(
-                self.model.name == name,
-                self.model.roaster_id == roaster_id
-            )
+            stmt = select(self.model).where(self.model.name == name, self.model.roaster_id == roaster_id)
             result = await db.execute(stmt)
             return result.scalar_one_or_none()
         except Exception as e:
@@ -131,17 +102,12 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
                 "Error getting coffee by name and roaster",
                 name=name,
                 roaster_id=str(roaster_id),
-                error=str(e)
+                error=str(e),
             )
             raise
 
     async def get_by_roaster(
-        self,
-        db: AsyncSession,
-        roaster_id: UUID,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, roaster_id: UUID, *, skip: int = 0, limit: int = 100
     ) -> list[Coffee]:
         """Get all coffees by roaster."""
         try:
@@ -155,20 +121,11 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
-            logger.error(
-                "Error getting coffees by roaster",
-                roaster_id=str(roaster_id),
-                error=str(e)
-            )
+            logger.error("Error getting coffees by roaster", roaster_id=str(roaster_id), error=str(e))
             raise
 
     async def search_by_name(
-        self,
-        db: AsyncSession,
-        name_query: str,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, name_query: str, *, skip: int = 0, limit: int = 100
     ) -> list[Coffee]:
         """Search coffees by name (case-insensitive partial match)."""
         try:
@@ -182,20 +139,11 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
-            logger.error(
-                "Error searching coffees by name",
-                query=name_query,
-                error=str(e)
-            )
+            logger.error("Error searching coffees by name", query=name_query, error=str(e))
             raise
 
     async def get_by_origin_country(
-        self,
-        db: AsyncSession,
-        country: str,
-        *,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, country: str, *, skip: int = 0, limit: int = 100
     ) -> list[Coffee]:
         """Get coffees by origin country."""
         try:
@@ -209,11 +157,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
-            logger.error(
-                "Error getting coffees by origin country",
-                country=country,
-                error=str(e)
-            )
+            logger.error("Error getting coffees by origin country", country=country, error=str(e))
             raise
 
 

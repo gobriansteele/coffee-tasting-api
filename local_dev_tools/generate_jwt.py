@@ -21,12 +21,7 @@ except ImportError:
 from app.core.config import settings
 
 
-def generate_jwt_token(
-    user_id: str,
-    email: str,
-    role: str = "authenticated",
-    hours: int = 1
-) -> str:
+def generate_jwt_token(user_id: str, email: str, role: str = "authenticated", hours: int = 1) -> str:
     """
     Generate a JWT token for testing.
 
@@ -52,11 +47,12 @@ def generate_jwt_token(
         "exp": exp,
         "aud": "authenticated",
         "iat": datetime.datetime.utcnow(),
-        "iss": "supabase"
+        "iss": "supabase",
     }
 
     token = jwt.encode(payload, settings.SUPABASE_JWT_SECRET, algorithm="HS256")
     return token
+
 
 def main():
     """Main function to generate and print JWT token."""
@@ -80,10 +76,7 @@ def main():
 
         # Decode and display token info for verification
         decoded = jwt.decode(
-            token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated"
+            token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"], audience="authenticated"
         )
         print("\nToken payload:")
         for key, value in decoded.items():
@@ -96,6 +89,7 @@ def main():
     except Exception as e:
         print(f"Error generating token: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
