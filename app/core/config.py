@@ -75,6 +75,11 @@ class Settings(BaseSettings):
         default=60, description="Rate limit period in seconds"
     )
 
+    # OpenAI
+    OPENAI_API_KEY: str | None = Field(
+        default=None, description="OpenAI API key for recommendation engine"
+    )
+
     @property
     def is_development(self) -> bool:
         return self.ENVIRONMENT.lower() in ("development", "dev", "local")
