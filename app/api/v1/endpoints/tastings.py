@@ -23,18 +23,28 @@ router = APIRouter()
 async def list_tasting_sessions(
     skip: int = Query(0, ge=0, description="Number of tastings to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of tastings to return"),
+    coffee_id: UUID | None = Query(None, description="Filter by coffee ID"),
     current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ) -> TastingSessionListResponse:
     """List all tasting sessions for the authenticated user."""
     try:
-        tastings = await tasting_repository.get_by_user_id(
-            db,
-            current_user_id,
-            skip=skip,
-            limit=limit
-        )
-        total = await tasting_repository.count_by_user(db, current_user_id)
+        if coffee_id:
+            tastings = await tasting_repository.get_by_coffee_id(db, coffee_id=coffee_id, user_id=current_user_id ,skip=skip, limit=limit)
+            total = await tasting_repository.count_by_coffee(db, coffee_id)
+            if not tastings:
+                tastings = []
+                total = 0
+
+        else:
+            # Get tastings for the current user with pagination
+            tastings = await tasting_repository.get_by_user_id(
+                db,
+                current_user_id,
+                skip=skip,
+                limit=limit
+            )
+            total = await tasting_repository.count_by_user(db, current_user_id)
 
         return TastingSessionListResponse(
             tastings=[TastingSessionResponse.model_validate(tasting) for tasting in tastings],

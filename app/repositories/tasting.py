@@ -51,6 +51,60 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             )
             raise
 
+<<<<<<< Updated upstream
+=======
+    async def get_by_user_id_with_eager_loading(
+        self,
+        db: AsyncSession,
+        user_id: str
+    ) -> list[TastingSession]:
+        """Get ALL tasting sessions by user ID with full eager loading."""
+        try:
+            return list(await db.scalars(
+                select(self.model)
+                .options(
+                    selectinload(self.model.tasting_notes)
+                    .selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee)
+                    .selectinload(Coffee.roaster)
+                )
+                .where(self.model.user_id == user_id)
+                .order_by(self.model.created_at.desc())
+            ))
+        except Exception as e:
+            logger.error(
+                "Error getting all tastings by user for recommendations",
+                user_id=user_id,
+                error=str(e)
+            )
+            raise
+
+    async def get_by_coffee_id(self, db: AsyncSession, user_id: UUID ,coffee_id: UUID, skip: int = 0, limit: int = 100) -> list[TastingSession]:
+        """Get all tasting sessions for a specific coffee."""
+        try:
+            return list(await db.scalars(
+                select(self.model)
+                .options(
+                    selectinload(self.model.tasting_notes)
+                    .selectinload(TastingNote.flavor_tag),
+                    selectinload(self.model.coffee)
+                    .selectinload(Coffee.roaster)
+                )
+                .where(self.model.coffee_id == coffee_id)
+                .where(self.model.user_id == user_id)
+                .order_by(self.model.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            ))
+        except Exception as e:
+            logger.error(
+                "Error getting tastings by coffee",
+                coffee_id=str(coffee_id),
+                error=str(e)
+            )
+            raise
+
+>>>>>>> Stashed changes
     async def create_with_notes(
         self,
         db: AsyncSession,
@@ -212,6 +266,26 @@ class TastingRepository(BaseRepository[TastingSession, TastingSessionCreate, Tas
             logger.error(
                 "Error counting tastings for user",
                 user_id=user_id,
+                error=str(e)
+            )
+            raise
+
+    async def count_by_coffee(
+        self,
+        db: AsyncSession,
+        coffee_id: UUID
+    ) -> int:
+        """Count total tasting sessions for a specific coffee."""
+        try:
+            count = await db.scalar(
+                select(func.count(self.model.id))
+                .where(self.model.coffee_id == coffee_id)
+            )
+            return count or 0
+        except Exception as e:
+            logger.error(
+                "Error counting tastings for coffee",
+                coffee_id=str(coffee_id),
                 error=str(e)
             )
             raise
