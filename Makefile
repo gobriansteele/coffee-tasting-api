@@ -22,58 +22,63 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean       Clean up cache files"
+	@echo "  freeze      Generate requirements.txt from current environment"
 	@echo "  jwt         Generate JWT token for testing (requires USER_ID and EMAIL)"
 
 # Installation
 install:
-	pip install -e .
+	uv pip install -e .
 
 dev:
-	pip install -e ".[dev]"
+	uv pip install -e ".[dev]"
 
 # Development server
 run:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Testing
 test:
-	pytest
+	uv run pytest
 
 test-cov:
-	pytest --cov=app --cov-report=html --cov-report=term-missing
+	uv run pytest --cov=app --cov-report=html --cov-report=term-missing
 
 # Code quality
 lint:
-	ruff check .
+	uv run ruff check .
 
 typecheck:
-	mypy app
+	uv run mypy app
 
 format:
-	ruff format .
+	uv run ruff format .
 
 # Fix common issues
 fix:
-	ruff check --fix .
-	ruff format .
+	uv run ruff check --fix .
+	uv run ruff format .
 
 # Database migrations
 migrate:
 	@read -p "Enter migration message: " message; \
-	alembic revision --autogenerate -m "$$message"
+	uv run alembic revision --autogenerate -m "$$message"
 
 upgrade:
-	alembic upgrade head
+	uv run alembic upgrade head
 
 downgrade:
-	alembic downgrade -1
+	uv run alembic downgrade -1
 
 # Database utilities
 db-current:
-	alembic current
+	uv run alembic current
 
 db-history:
-	alembic history
+	uv run alembic history
+
+# Dependencies
+freeze:
+	uv pip freeze > requirements.txt
 
 # Clean up
 clean:
@@ -100,7 +105,7 @@ jwt:
 		echo "Example: make jwt USER_ID=abc123 EMAIL=user@example.com ROLE=service_role HOURS=24"; \
 		exit 1; \
 	fi
-	@python local_dev_tools/generate_jwt.py "$(USER_ID)" "$(EMAIL)" "$(ROLE)" "$(HOURS)"
+	@uv run python local_dev_tools/generate_jwt.py "$(USER_ID)" "$(EMAIL)" "$(ROLE)" "$(HOURS)"
 
 # Development shortcuts
 check: lint typecheck test
