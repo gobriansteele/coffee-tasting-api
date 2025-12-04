@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: str | None = Field(default=None, description="OpenAI API key for recommendation engine")
 
+    # ChromaDB
+    CHROMA_DB_NAME: str | None = Field(default=None, description="ChromaDB database name")
+    CHROMA_API_KEY: str | None = Field(default=None, description="ChromaDB API key")
+    CHROMA_TENANT: str | None = Field(default=None, description="ChromaDB tenant ID")
+
     @property
     def is_development(self) -> bool:
         return self.ENVIRONMENT.lower() in ("development", "dev", "local")
