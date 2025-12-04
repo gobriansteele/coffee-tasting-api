@@ -19,10 +19,12 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         super().__init__(Coffee)
 
     async def get(self, db: AsyncSession, id: UUID, include_delete: bool = False) -> Coffee | None:
-        """Get a single coffee by ID with eager loaded flavor_tags."""
+        """Get a single coffee by ID with eager loaded flavor_tags and roaster."""
         try:
             result = await db.scalar(
-                select(self.model).options(selectinload(self.model.flavor_tags)).where(self.model.id == id)
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+                .where(self.model.id == id)
             )
             return result if result else None
         except Exception as e:
@@ -32,11 +34,14 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
     async def get_multi(
         self, db: AsyncSession, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> list[Coffee]:
-        """Get multiple records with pagination and eager load flavor_tags."""
+        """Get multiple records with pagination and eager load flavor_tags and roaster."""
         try:
             return list(
                 await db.scalars(
-                    select(self.model).options(selectinload(self.model.flavor_tags)).offset(skip).limit(limit)
+                    select(self.model)
+                    .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+                    .offset(skip)
+                    .limit(limit)
                 )
             )
         except Exception as e:
@@ -81,10 +86,12 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             raise
 
     async def get_with_flavor_tags(self, db: AsyncSession, id: UUID) -> Coffee | None:
-        """Get a coffee with its flavor tags."""
+        """Get a coffee with its flavor tags and roaster."""
         try:
             result = await db.scalar(
-                select(self.model).options(selectinload(self.model.flavor_tags)).where(self.model.id == id)
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+                .where(self.model.id == id)
             )
             return result if result else None
         except Exception as e:
@@ -113,7 +120,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         try:
             stmt = (
                 select(self.model)
-                .options(selectinload(self.model.flavor_tags))
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
                 .where(self.model.roaster_id == roaster_id)
                 .offset(skip)
                 .limit(limit)
@@ -131,7 +138,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         try:
             stmt = (
                 select(self.model)
-                .options(selectinload(self.model.flavor_tags))
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
                 .where(self.model.name.ilike(f"%{name_query}%"))
                 .offset(skip)
                 .limit(limit)
@@ -149,7 +156,7 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
         try:
             stmt = (
                 select(self.model)
-                .options(selectinload(self.model.flavor_tags))
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
                 .where(self.model.origin_country.ilike(f"%{country}%"))
                 .offset(skip)
                 .limit(limit)

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ..models.coffee import ProcessingMethod, RoastLevel
 from .flavor_tag import FlavorTagResponse
+from .roaster import RoasterSummary
 
 
 class CoffeeBase(BaseModel):
@@ -75,6 +76,7 @@ class CoffeeResponse(CoffeeBase):
     created_at: datetime
     updated_at: datetime
     flavor_tags: list[FlavorTagResponse] = Field(default_factory=list, description="Associated flavor tags")
+    roaster: RoasterSummary | None = Field(None, description="Roaster information")
 
     class Config:
         from_attributes = True

@@ -44,6 +44,17 @@ class RoasterUpdate(BaseModel):
         return v
 
 
+class RoasterSummary(BaseModel):
+    """Slim roaster schema for embedding in other responses."""
+
+    id: UUID
+    name: str
+    location: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class RoasterResponse(RoasterBase):
     """Schema for roaster responses."""
 
