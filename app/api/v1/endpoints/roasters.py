@@ -48,18 +48,22 @@ async def list_roasters(
     search: str = Query(None, description="Search roasters by name"),
     location: str = Query(None, description="Filter roasters by location"),
     db: AsyncSession = Depends(get_db),
-    _current_user_id: str = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id),
 ) -> RoasterListResponse:
-    """List roasters with optional filtering and pagination."""
+    """List roasters for the current user with optional filtering and pagination."""
     try:
         if search:
-            roasters = await roaster_repository.search_by_name(db, search, skip=skip, limit=limit)
+            roasters = await roaster_repository.search_by_name_for_user(
+                db, search, current_user_id, skip=skip, limit=limit
+            )
         elif location:
-            roasters = await roaster_repository.get_by_location(db, location, skip=skip, limit=limit)
+            roasters = await roaster_repository.get_by_location_for_user(
+                db, location, current_user_id, skip=skip, limit=limit
+            )
         else:
-            roasters = await roaster_repository.get_multi(db, skip=skip, limit=limit)
+            roasters = await roaster_repository.get_multi_for_user(db, current_user_id, skip=skip, limit=limit)
 
-        total = await roaster_repository.count(db)
+        total = await roaster_repository.count_for_user(db, current_user_id)
 
         return RoasterListResponse(
             roasters=[RoasterResponse.model_validate(roaster) for roaster in roasters],
@@ -68,6 +72,8 @@ async def list_roasters(
             size=len(roasters),
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error listing roasters", error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -77,11 +83,11 @@ async def list_roasters(
 async def get_roaster(
     roaster_id: UUID, db: AsyncSession = Depends(get_db), current_user_id: str = Depends(get_current_user_id)
 ) -> RoasterResponse:
-    """Get a specific roaster by ID."""
+    """Get a specific roaster owned by the current user."""
 
     try:
         roaster = await roaster_repository.get(db, roaster_id)
-        if not roaster:
+        if not roaster or roaster.created_by != current_user_id:
             raise HTTPException(status_code=404, detail="Roaster not found")
 
         return RoasterResponse.model_validate(roaster)

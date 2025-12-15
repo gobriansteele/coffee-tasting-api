@@ -33,10 +33,24 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             logger.error(f"Error getting {self.model.__name__}", error=str(e))
             raise
 
-    async def get_multi(
+    async def get_multi_for_user(
+        self, db: AsyncSession, user_id: str, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
+    ) -> list[ModelType]:
+        """Get multiple records for a specific user with pagination."""
+        try:
+            query = select(self.model)
+            if not include_deleted:
+                query = query.where(self.model.deleted_at.is_(None))
+            query = query.where(self.model.created_by == user_id)
+            return list(await db.scalars(query.offset(skip).limit(limit)))
+        except Exception as e:
+            logger.error(f"Error getting multiple {self.model.__name__} for user", error=str(e))
+            raise
+
+    async def get_multi_all(
         self, db: AsyncSession, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> list[ModelType]:
-        """Get multiple records with pagination."""
+        """Get multiple records with pagination (all users - admin use only)."""
         try:
             query = select(self.model)
             if not include_deleted:
@@ -127,8 +141,21 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             logger.error(f"Error deleting {self.model.__name__}", error=str(e))
             raise
 
-    async def count(self, db: AsyncSession, include_deleted: bool = False) -> int:
-        """Count total records."""
+    async def count_for_user(self, db: AsyncSession, user_id: str, include_deleted: bool = False) -> int:
+        """Count total records for a specific user."""
+        try:
+            query = select(func.count(self.model.id))
+            if not include_deleted:
+                query = query.where(self.model.deleted_at.is_(None))
+            query = query.where(self.model.created_by == user_id)
+            count = await db.scalar(query)
+            return count or 0
+        except Exception as e:
+            logger.error(f"Error counting {self.model.__name__} for user", error=str(e))
+            raise
+
+    async def count_all(self, db: AsyncSession, include_deleted: bool = False) -> int:
+        """Count total records (all users - admin use only)."""
         try:
             query = select(func.count(self.model.id))
             if not include_deleted:

@@ -31,10 +31,27 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             logger.error(f"Error getting {self.model.__name__}", error=str(e))
             raise
 
-    async def get_multi(
+    async def get_multi_for_user(
+        self, db: AsyncSession, user_id: str, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
+    ) -> list[Coffee]:
+        """Get multiple coffees for a specific user with pagination and eager loading."""
+        try:
+            query = (
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+            )
+            if not include_deleted:
+                query = query.where(self.model.deleted_at.is_(None))
+            query = query.where(self.model.created_by == user_id).offset(skip).limit(limit)
+            return list(await db.scalars(query))
+        except Exception as e:
+            logger.error(f"Error getting multiple {self.model.__name__} for user", error=str(e))
+            raise
+
+    async def get_multi_all(
         self, db: AsyncSession, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> list[Coffee]:
-        """Get multiple records with pagination and eager load flavor_tags and roaster."""
+        """Get multiple coffees with pagination and eager loading (all users - admin use only)."""
         try:
             return list(
                 await db.scalars(
@@ -113,10 +130,30 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             )
             raise
 
-    async def get_by_roaster(
+    async def get_by_roaster_for_user(
+        self, db: AsyncSession, roaster_id: UUID, user_id: str, *, skip: int = 0, limit: int = 100
+    ) -> list[Coffee]:
+        """Get coffees by roaster for a specific user."""
+        try:
+            stmt = (
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+                .where(self.model.roaster_id == roaster_id)
+                .where(self.model.created_by == user_id)
+                .where(self.model.deleted_at.is_(None))
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.error("Error getting coffees by roaster for user", roaster_id=str(roaster_id), error=str(e))
+            raise
+
+    async def get_by_roaster_all(
         self, db: AsyncSession, roaster_id: UUID, *, skip: int = 0, limit: int = 100
     ) -> list[Coffee]:
-        """Get all coffees by roaster."""
+        """Get all coffees by roaster (all users - admin use only)."""
         try:
             stmt = (
                 select(self.model)
@@ -131,10 +168,30 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             logger.error("Error getting coffees by roaster", roaster_id=str(roaster_id), error=str(e))
             raise
 
-    async def search_by_name(
+    async def search_by_name_for_user(
+        self, db: AsyncSession, name_query: str, user_id: str, *, skip: int = 0, limit: int = 100
+    ) -> list[Coffee]:
+        """Search coffees by name for a specific user (case-insensitive partial match)."""
+        try:
+            stmt = (
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+                .where(self.model.name.ilike(f"%{name_query}%"))
+                .where(self.model.created_by == user_id)
+                .where(self.model.deleted_at.is_(None))
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.error("Error searching coffees by name for user", query=name_query, error=str(e))
+            raise
+
+    async def search_by_name_all(
         self, db: AsyncSession, name_query: str, *, skip: int = 0, limit: int = 100
     ) -> list[Coffee]:
-        """Search coffees by name (case-insensitive partial match)."""
+        """Search coffees by name (all users - admin use only)."""
         try:
             stmt = (
                 select(self.model)
@@ -149,10 +206,30 @@ class CoffeeRepository(BaseRepository[Coffee, CoffeeCreate, CoffeeUpdate]):
             logger.error("Error searching coffees by name", query=name_query, error=str(e))
             raise
 
-    async def get_by_origin_country(
+    async def get_by_origin_country_for_user(
+        self, db: AsyncSession, country: str, user_id: str, *, skip: int = 0, limit: int = 100
+    ) -> list[Coffee]:
+        """Get coffees by origin country for a specific user."""
+        try:
+            stmt = (
+                select(self.model)
+                .options(selectinload(self.model.flavor_tags), selectinload(self.model.roaster))
+                .where(self.model.origin_country.ilike(f"%{country}%"))
+                .where(self.model.created_by == user_id)
+                .where(self.model.deleted_at.is_(None))
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.error("Error getting coffees by origin country for user", country=country, error=str(e))
+            raise
+
+    async def get_by_origin_country_all(
         self, db: AsyncSession, country: str, *, skip: int = 0, limit: int = 100
     ) -> list[Coffee]:
-        """Get coffees by origin country."""
+        """Get coffees by origin country (all users - admin use only)."""
         try:
             stmt = (
                 select(self.model)

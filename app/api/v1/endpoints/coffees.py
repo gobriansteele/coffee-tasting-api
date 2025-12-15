@@ -77,22 +77,26 @@ async def list_coffees(
     db: AsyncSession = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id),
 ) -> CoffeeListResponse:
-    """List all coffees."""
+    """List coffees for the current user."""
 
     try:
         if search:
-            # Search by name
-            coffees = await coffee_repository.search_by_name(db, search, skip=skip, limit=limit)
+            # Search by name (user-scoped)
+            coffees = await coffee_repository.search_by_name_for_user(
+                db, search, current_user_id, skip=skip, limit=limit
+            )
         elif roaster_id:
-            # Filter by roaster ID
+            # Filter by roaster ID (user-scoped)
             roaster = await roaster_repository.get(db, roaster_id)
             if not roaster:
                 raise HTTPException(status_code=404, detail=f"Roaster with ID '{roaster_id}' not found")
-            coffees = await coffee_repository.get_by_roaster(db, roaster_id, skip=skip, limit=limit)
+            coffees = await coffee_repository.get_by_roaster_for_user(
+                db, roaster_id, current_user_id, skip=skip, limit=limit
+            )
         else:
-            coffees = await coffee_repository.get_multi(db, skip=skip, limit=limit)
+            coffees = await coffee_repository.get_multi_for_user(db, current_user_id, skip=skip, limit=limit)
 
-        total = await coffee_repository.count(db)
+        total = await coffee_repository.count_for_user(db, current_user_id)
 
         return CoffeeListResponse(
             coffees=[CoffeeResponse.model_validate(coffee) for coffee in coffees],
@@ -101,6 +105,8 @@ async def list_coffees(
             size=len(coffees),
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error listing coffees", error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -110,14 +116,16 @@ async def list_coffees(
 async def get_coffee(
     coffee_id: UUID, db: AsyncSession = Depends(get_db), current_user_id: str = Depends(get_current_user_id)
 ) -> CoffeeResponse:
-    """Get a specific coffee."""
+    """Get a specific coffee owned by the current user."""
     try:
         coffee = await coffee_repository.get_with_flavor_tags(db, coffee_id)
-        if not coffee:
+        if not coffee or coffee.created_by != current_user_id:
             raise HTTPException(status_code=404, detail="Coffee not found")
 
         return CoffeeResponse.model_validate(coffee)
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error getting coffee", coffee_id=str(coffee_id), error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e
