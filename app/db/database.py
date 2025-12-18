@@ -31,8 +31,8 @@ SessionLocal: Callable[[], Session] | None = None
 AsyncSessionLocal: Callable[[], AsyncSession] | None = None
 
 
-def create_database_engines() -> None:
-    """Create database engines for sync and async operations."""
+def create_postgresql_engine() -> None:
+    """Create PostgreSQL engines for sync and async operations."""
     global engine, async_engine, SessionLocal, AsyncSessionLocal
 
     if not settings.DATABASE_URL:
@@ -92,7 +92,7 @@ def create_database_engines() -> None:
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """Get async database session."""
     if AsyncSessionLocal is None:
-        raise RuntimeError("Database not initialized. Call create_database_engines() first.")
+        raise RuntimeError("PostgreSQL not initialized. Call create_postgresql_engine() first.")
 
     async with AsyncSessionLocal() as session:
         try:
@@ -108,13 +108,13 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 def get_sync_session() -> Session:
     """Get sync database session."""
     if SessionLocal is None:
-        raise RuntimeError("Database not initialized. Call create_database_engines() first.")
+        raise RuntimeError("PostgreSQL not initialized. Call create_postgresql_engine() first.")
 
     return SessionLocal()
 
 
-async def check_database_connection() -> bool:
-    """Check if database connection is working."""
+async def check_postgresql_connection() -> bool:
+    """Check if PostgreSQL database connection is working."""
     try:
         if async_engine is None:
             return False

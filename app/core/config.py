@@ -67,6 +67,14 @@ class Settings(BaseSettings):
     CHROMA_API_KEY: str | None = Field(default=None, description="ChromaDB API key")
     CHROMA_TENANT: str | None = Field(default=None, description="ChromaDB tenant ID")
 
+    # Neo4j Graph Database
+    NEO4J_URI: str | None = Field(default=None, description="Neo4j Aura connection URI")
+    NEO4J_USER: str = Field(default="neo4j", description="Neo4j username")
+    NEO4J_PASSWORD: str | None = Field(default=None, description="Neo4j password")
+
+    # Geocoding (OpenCage)
+    OPENCAGE_API_KEY: str | None = Field(default=None, description="OpenCage geocoding API key")
+
     @property
     def is_development(self) -> bool:
         return self.ENVIRONMENT.lower() in ("development", "dev", "local")
@@ -78,6 +86,11 @@ class Settings(BaseSettings):
     @property
     def is_testing(self) -> bool:
         return self.ENVIRONMENT.lower() in ("testing", "test")
+
+    @property
+    def neo4j_configured(self) -> bool:
+        """Check if Neo4j is properly configured."""
+        return bool(self.NEO4J_URI and self.NEO4J_PASSWORD)
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, env_parse_none_str="None")
 

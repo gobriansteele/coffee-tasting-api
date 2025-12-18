@@ -6,8 +6,9 @@ from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
 from app.models.coffee import Coffee, FlavorTag
-from app.repositories.base import BaseRepository
 from app.schemas.coffee import CoffeeCreate, CoffeeUpdate
+
+from .base import BaseRepository
 
 logger = get_logger(__name__)
 

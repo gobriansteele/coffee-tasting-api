@@ -7,9 +7,10 @@ from sqlalchemy.orm import selectinload
 from app.core.logging import get_logger
 from app.models.coffee import Coffee
 from app.models.tasting import TastingNote, TastingSession
-from app.repositories.base import BaseRepository
-from app.repositories.flavor_tag import flavor_tag_repository
 from app.schemas.tasting import TastingSessionCreate, TastingSessionUpdate
+
+from .base import BaseRepository
+from .flavor_tag import flavor_tag_repository
 
 logger = get_logger(__name__)
 

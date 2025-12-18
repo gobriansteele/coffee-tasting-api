@@ -40,6 +40,7 @@ dependencies = [
     "gotrue>=2.3.0",
     "asyncpg>=0.30.0",
     "greenlet>=3.2.3",
+    "neo4j>=5.15.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -111,7 +112,8 @@ module = [
     "gotrue.*",
     "postgrest.*",
     "storage3.*",
-    "realtime.*"
+    "realtime.*",
+    "neo4j.*"
 ]
 ignore_missing_imports = true
 

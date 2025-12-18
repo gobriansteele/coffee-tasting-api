@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps.auth import get_current_user_id, require_user_access
 from app.api.deps.database import get_db
 from app.core.logging import get_logger
-from app.repositories.coffee import coffee_repository
-from app.repositories.flavor_tag import flavor_tag_repository
-from app.repositories.roaster import roaster_repository
+from app.repositories.sql.coffee import coffee_repository
+from app.repositories.sql.flavor_tag import flavor_tag_repository
+from app.repositories.sql.roaster import roaster_repository
 from app.schemas.coffee import CoffeeCreate, CoffeeListResponse, CoffeeResponse
 
 logger = get_logger(__name__)

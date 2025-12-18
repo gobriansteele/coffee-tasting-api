@@ -3,8 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.models.coffee import Roaster
-from app.repositories.base import BaseRepository
 from app.schemas.roaster import RoasterCreate, RoasterUpdate
+
+from .base import BaseRepository
 
 logger = get_logger(__name__)
 
