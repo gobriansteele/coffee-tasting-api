@@ -113,3 +113,55 @@ async def get_current_user_optional(
         # Log the error but don't raise - this is optional auth
         logger.debug("Optional authentication failed, proceeding without auth")
         return None
+
+
+async def get_current_user_role(current_user: dict[str, Any] = Depends(get_current_user)) -> str:
+    """
+    Dependency to get the current user's application role.
+
+    Args:
+        current_user: Current user info from get_current_user dependency
+
+    Returns:
+        The user role string ('admin' or 'user')
+    """
+    return current_user.get("user_role", "user")
+
+
+def require_role(allowed_roles: list[str]):
+    """
+    Factory function to create a dependency that requires specific roles.
+
+    Args:
+        allowed_roles: List of role names that are allowed access
+
+    Returns:
+        A dependency function that validates user role
+
+    Example:
+        @router.get("/admin-only")
+        async def admin_endpoint(
+            current_user_id: str = Depends(get_current_user_id),
+            _: str = Depends(require_role(["admin"])),
+        ):
+            ...
+    """
+
+    async def role_checker(current_user: dict[str, Any] = Depends(get_current_user)) -> str:
+        user_role = current_user.get("user_role", "user")
+        if user_role not in allowed_roles:
+            logger.warning(
+                f"Access denied: user {current_user.get('user_id')} with role '{user_role}' "
+                f"tried to access endpoint requiring {allowed_roles}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: This endpoint requires one of these roles: {allowed_roles}",
+            )
+        return user_role
+
+    return role_checker
+
+
+# Convenience dependency for admin-only endpoints
+require_admin = require_role(["admin"])

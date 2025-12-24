@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.auth import get_current_user_id, require_user_access
@@ -14,6 +14,7 @@ from app.schemas.tasting import (
     TastingSessionResponse,
     TastingSessionUpdate,
 )
+from app.tasks.graph_sync import delete_tasting_from_graph, sync_tasting_to_graph
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -58,6 +59,7 @@ async def list_tasting_sessions(
 @router.post("/", response_model=TastingSessionResponse, status_code=201)
 async def create_tasting_session(
     tasting_data: TastingSessionCreate,
+    background_tasks: BackgroundTasks,
     current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> TastingSessionResponse:
@@ -81,6 +83,9 @@ async def create_tasting_session(
             user_id=current_user_id,
             coffee_id=str(tasting.coffee_id),
         )
+
+        # Queue graph sync
+        background_tasks.add_task(sync_tasting_to_graph, tasting.id)
 
         return TastingSessionResponse.model_validate(tasting)
 
@@ -123,6 +128,7 @@ async def get_tasting_session(
 async def update_tasting_session(
     session_id: UUID,
     update_data: TastingSessionUpdate,
+    background_tasks: BackgroundTasks,
     current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> TastingSessionResponse:
@@ -156,6 +162,9 @@ async def update_tasting_session(
 
         logger.info("Updated tasting session", tasting_id=str(session_id), user_id=current_user_id)
 
+        # Queue graph sync
+        background_tasks.add_task(sync_tasting_to_graph, session_id)
+
         return TastingSessionResponse.model_validate(tasting_with_notes)
 
     except HTTPException:
@@ -172,7 +181,10 @@ async def update_tasting_session(
 
 @router.delete("/{session_id}", status_code=204)
 async def delete_tasting_session(
-    session_id: UUID, current_user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
+    session_id: UUID,
+    background_tasks: BackgroundTasks,
+    current_user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a tasting session."""
     try:
@@ -188,6 +200,9 @@ async def delete_tasting_session(
 
         # Perform soft delete
         await tasting_repository.delete(db, id=session_id, current_user_id=current_user_id)
+
+        # Queue graph delete
+        background_tasks.add_task(delete_tasting_from_graph, session_id)
 
         logger.info("Deleted tasting session", session_id=str(session_id), user_id=current_user_id)
 

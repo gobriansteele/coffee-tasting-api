@@ -50,6 +50,18 @@ SET t.overall_rating = $overall_rating,
     t.created_at = $created_at
 """
 
+# --- Embedding Upsert Queries ---
+
+_UPSERT_COFFEE_EMBEDDING: LiteralString = """
+MATCH (c:Coffee {id: $id})
+SET c.embedding = $embedding
+"""
+
+_UPSERT_FLAVOR_TAG_EMBEDDING: LiteralString = """
+MATCH (f:FlavorTag {id: $id})
+SET f.embedding = $embedding
+"""
+
 # --- Relationship Queries ---
 
 _LINK_ROASTER_PRODUCES_COFFEE: LiteralString = """
@@ -233,6 +245,46 @@ class GraphSyncRepository(GraphRepository):
             logger.debug("Upserted tasting session node", tasting_id=str(tasting.id))
         except Exception as e:
             self._handle_graph_error(e, f"upsert tasting session {tasting.id}")
+
+    # --- Embedding Methods ---
+
+    async def upsert_coffee_embedding(
+        self, session: AsyncSession, coffee_id: str, embedding: list[float]
+    ) -> None:
+        """Update a Coffee node's embedding vector.
+
+        Args:
+            session: Neo4j async session
+            coffee_id: Coffee UUID as string
+            embedding: Embedding vector (1536 dimensions for text-embedding-3-small)
+        """
+        try:
+            await session.run(
+                _UPSERT_COFFEE_EMBEDDING,
+                {"id": coffee_id, "embedding": embedding},
+            )
+            logger.debug("Upserted coffee embedding", coffee_id=coffee_id)
+        except Exception as e:
+            self._handle_graph_error(e, f"upsert coffee embedding {coffee_id}")
+
+    async def upsert_flavor_tag_embedding(
+        self, session: AsyncSession, flavor_tag_id: str, embedding: list[float]
+    ) -> None:
+        """Update a FlavorTag node's embedding vector.
+
+        Args:
+            session: Neo4j async session
+            flavor_tag_id: FlavorTag UUID as string
+            embedding: Embedding vector (1536 dimensions for text-embedding-3-small)
+        """
+        try:
+            await session.run(
+                _UPSERT_FLAVOR_TAG_EMBEDDING,
+                {"id": flavor_tag_id, "embedding": embedding},
+            )
+            logger.debug("Upserted flavor tag embedding", flavor_tag_id=flavor_tag_id)
+        except Exception as e:
+            self._handle_graph_error(e, f"upsert flavor tag embedding {flavor_tag_id}")
 
     # --- Relationship Methods ---
 

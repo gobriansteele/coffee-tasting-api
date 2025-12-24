@@ -41,6 +41,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "greenlet>=3.2.3",
     "neo4j>=5.15.0",
+    "openai>=1.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -113,7 +114,8 @@ module = [
     "postgrest.*",
     "storage3.*",
     "realtime.*",
-    "neo4j.*"
+    "neo4j.*",
+    "openai.*"
 ]
 ignore_missing_imports = true
 

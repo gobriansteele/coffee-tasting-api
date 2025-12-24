@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.auth import get_current_user_id, require_user_access
@@ -10,6 +10,7 @@ from app.repositories.sql.coffee import coffee_repository
 from app.repositories.sql.flavor_tag import flavor_tag_repository
 from app.repositories.sql.roaster import roaster_repository
 from app.schemas.coffee import CoffeeCreate, CoffeeListResponse, CoffeeResponse
+from app.tasks.graph_sync import delete_coffee_from_graph, sync_coffee_to_graph
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -18,6 +19,7 @@ router = APIRouter()
 @router.post("/", response_model=CoffeeResponse, status_code=201)
 async def create_coffee(
     coffee_data: CoffeeCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id),
 ) -> CoffeeResponse:
@@ -58,6 +60,9 @@ async def create_coffee(
             roaster_id=str(coffee.roaster_id),
             flavor_tags=coffee_data.flavor_tags,
         )
+
+        # Queue graph sync
+        background_tasks.add_task(sync_coffee_to_graph, coffee.id, current_user_id)
 
         return CoffeeResponse.model_validate(coffee)
 
@@ -133,7 +138,10 @@ async def get_coffee(
 
 @router.delete("/{coffee_id}", status_code=204)
 async def delete_coffee(
-    coffee_id: UUID, db: AsyncSession = Depends(get_db), current_user_id: str = Depends(get_current_user_id)
+    coffee_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
 ) -> None:
     """Delete a specific coffee."""
     try:
@@ -149,6 +157,9 @@ async def delete_coffee(
 
         # Perform soft delete
         await coffee_repository.delete(db, id=coffee_id, current_user_id=current_user_id)
+
+        # Queue graph delete
+        background_tasks.add_task(delete_coffee_from_graph, coffee_id)
 
         logger.info("Deleted coffee", coffee_id=str(coffee_id), user_id=current_user_id)
 

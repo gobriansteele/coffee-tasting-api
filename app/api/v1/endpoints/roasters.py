@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps.auth import get_current_user_id, require_user_access
@@ -8,6 +8,7 @@ from app.api.deps.database import get_db
 from app.core.logging import get_logger
 from app.repositories.sql.roaster import roaster_repository
 from app.schemas.roaster import RoasterCreate, RoasterListResponse, RoasterResponse
+from app.tasks.graph_sync import delete_roaster_from_graph, sync_roaster_to_graph
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -16,6 +17,7 @@ router = APIRouter()
 @router.post("/", response_model=RoasterResponse, status_code=201)
 async def create_roaster(
     roaster_data: RoasterCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id),
 ) -> RoasterResponse:
@@ -31,6 +33,9 @@ async def create_roaster(
         # Create the roaster
         roaster = await roaster_repository.create(db, obj_in=roaster_data, current_user_id=current_user_id)
         logger.info("Created roaster", roaster_id=str(roaster.id), name=roaster.name)
+
+        # Queue graph sync
+        background_tasks.add_task(sync_roaster_to_graph, roaster.id, current_user_id)
 
         return RoasterResponse.model_validate(roaster)
 
@@ -101,7 +106,10 @@ async def get_roaster(
 
 @router.delete("/{roaster_id}", status_code=204)
 async def delete_roaster(
-    roaster_id: UUID, db: AsyncSession = Depends(get_db), current_user_id: str = Depends(get_current_user_id)
+    roaster_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id),
 ) -> None:
     """Delete a specific roaster."""
     try:
@@ -117,6 +125,9 @@ async def delete_roaster(
 
         # Perform soft delete
         await roaster_repository.delete(db, id=roaster_id, current_user_id=current_user_id)
+
+        # Queue graph delete
+        background_tasks.add_task(delete_roaster_from_graph, roaster_id)
 
         logger.info("Deleted roaster", roaster_id=str(roaster_id), user_id=current_user_id)
 

@@ -87,7 +87,8 @@ async def validate_access_token(token: str) -> dict[str, Any]:
     return {
         "user_id": payload["sub"],
         "email": payload.get("email"),
-        "role": payload.get("role", "authenticated"),
+        "role": payload.get("role", "authenticated"),  # Supabase system role
+        "user_role": payload.get("user_role", "user"),  # Custom app role from auth hook
         "session_id": payload.get("session_id"),  # Supabase-specific claim
         "exp": payload.get("exp"),
         "iat": payload.get("iat"),

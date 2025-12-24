@@ -61,6 +61,9 @@ class Settings(BaseSettings):
 
     # OpenAI
     OPENAI_API_KEY: str | None = Field(default=None, description="OpenAI API key for recommendation engine")
+    OPENAI_EMBEDDING_MODEL: str = Field(
+        default="text-embedding-3-small", description="OpenAI embedding model for vector search"
+    )
 
     # ChromaDB
     CHROMA_DB_NAME: str | None = Field(default=None, description="ChromaDB database name")

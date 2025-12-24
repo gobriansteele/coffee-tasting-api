@@ -8,12 +8,28 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Embedding dimensions for text-embedding-3-small
+EMBEDDING_DIMENSIONS = 1536
+
 # Constraint queries as literals
 _CONSTRAINT_USER: LiteralString = "CREATE CONSTRAINT user_id IF NOT EXISTS FOR (n:User) REQUIRE n.id IS UNIQUE"
 _CONSTRAINT_ROASTER: LiteralString = "CREATE CONSTRAINT roaster_id IF NOT EXISTS FOR (n:Roaster) REQUIRE n.id IS UNIQUE"
 _CONSTRAINT_COFFEE: LiteralString = "CREATE CONSTRAINT coffee_id IF NOT EXISTS FOR (n:Coffee) REQUIRE n.id IS UNIQUE"
 _CONSTRAINT_FLAVOR_TAG: LiteralString = "CREATE CONSTRAINT flavor_tag_id IF NOT EXISTS FOR (n:FlavorTag) REQUIRE n.id IS UNIQUE"
 _CONSTRAINT_TASTING: LiteralString = "CREATE CONSTRAINT tasting_session_id IF NOT EXISTS FOR (n:TastingSession) REQUIRE n.id IS UNIQUE"
+
+# Vector index queries (Neo4j 5.11+)
+_VECTOR_INDEX_COFFEE: LiteralString = """
+CREATE VECTOR INDEX coffee_embedding IF NOT EXISTS
+FOR (n:Coffee) ON n.embedding
+OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}
+"""
+
+_VECTOR_INDEX_FLAVOR_TAG: LiteralString = """
+CREATE VECTOR INDEX flavor_tag_embedding IF NOT EXISTS
+FOR (n:FlavorTag) ON n.embedding
+OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}
+"""
 
 
 class GraphRepository:
@@ -89,4 +105,15 @@ class GraphRepository:
         except Exception as e:
             self._handle_graph_error(e, "create constraint for TastingSession")
 
-        logger.info("Graph constraints initialized")
+        # Vector indexes for embedding similarity search
+        try:
+            await session.run(_VECTOR_INDEX_COFFEE)
+        except Exception as e:
+            self._handle_graph_error(e, "create vector index for Coffee")
+
+        try:
+            await session.run(_VECTOR_INDEX_FLAVOR_TAG)
+        except Exception as e:
+            self._handle_graph_error(e, "create vector index for FlavorTag")
+
+        logger.info("Graph constraints and vector indexes initialized")
