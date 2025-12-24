@@ -43,89 +43,83 @@ async def sync_graph_database(
             detail="Neo4j is not configured",
         )
 
+    logger.info("Starting full graph sync", initiated_by=current_user_id)
+
     errors: list[str] = []
     roasters_synced = 0
     coffees_synced = 0
     tastings_synced = 0
 
-    # Get graph session
-    graph_session = None
-    async for session in get_graph_session():
-        graph_session = session
-        break
+    # Keep all work inside the generator scope so the session stays open
+    async for graph_session in get_graph_session():
+        batch_size = 100
 
-    if not graph_session:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not connect to Neo4j",
-        )
+        # Sync all roasters
+        skip = 0
+        while True:
+            roasters = await roaster_repository.get_multi_all(db, skip=skip, limit=batch_size)
+            if not roasters:
+                break
 
-    logger.info("Starting full graph sync", initiated_by=current_user_id)
-
-    # Sync all roasters
-    skip = 0
-    batch_size = 100
-    while True:
-        roasters = await roaster_repository.get_multi_all(db, skip=skip, limit=batch_size)
-        if not roasters:
-            break
-
-        for roaster in roasters:
-            try:
-                await graph_sync_repository.sync_roaster_full(
-                    graph_session, roaster, roaster.created_by
-                )
-                roasters_synced += 1
-            except Exception as e:
-                error_msg = f"Failed to sync roaster {roaster.id}: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
-
-        skip += batch_size
-
-    # Sync all coffees
-    skip = 0
-    while True:
-        coffees = await coffee_repository.get_multi_all(db, skip=skip, limit=batch_size)
-        if not coffees:
-            break
-
-        for coffee in coffees:
-            try:
-                # Get coffee with flavor tags for full sync
-                coffee_with_tags = await coffee_repository.get_with_flavor_tags(db, coffee.id)
-                if coffee_with_tags:
-                    await graph_sync_repository.sync_coffee_full(
-                        graph_session, coffee_with_tags, coffee_with_tags.created_by
+            for roaster in roasters:
+                try:
+                    await graph_sync_repository.sync_roaster_full(
+                        graph_session, roaster, roaster.created_by
                     )
-                    coffees_synced += 1
-            except Exception as e:
-                error_msg = f"Failed to sync coffee {coffee.id}: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
+                    roasters_synced += 1
+                except Exception as e:
+                    error_msg = f"Failed to sync roaster {roaster.id}: {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
 
-        skip += batch_size
+            skip += batch_size
 
-    # Sync all tastings
-    skip = 0
-    while True:
-        tastings = await tasting_repository.get_multi_all(db, skip=skip, limit=batch_size)
-        if not tastings:
-            break
+        # Sync all coffees
+        skip = 0
+        while True:
+            coffees = await coffee_repository.get_multi_all(db, skip=skip, limit=batch_size)
+            if not coffees:
+                break
 
-        for tasting in tastings:
-            try:
-                # Get tasting with notes for full sync
-                tasting_with_notes = await tasting_repository.get_with_notes(db, tasting.id)
-                if tasting_with_notes:
-                    await graph_sync_repository.sync_tasting_full(graph_session, tasting_with_notes)
-                    tastings_synced += 1
-            except Exception as e:
-                error_msg = f"Failed to sync tasting {tasting.id}: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
+            for coffee in coffees:
+                try:
+                    # Get coffee with flavor tags for full sync
+                    coffee_with_tags = await coffee_repository.get_with_flavor_tags(db, coffee.id)
+                    if coffee_with_tags:
+                        await graph_sync_repository.sync_coffee_full(
+                            graph_session, coffee_with_tags, coffee_with_tags.created_by
+                        )
+                        coffees_synced += 1
+                except Exception as e:
+                    error_msg = f"Failed to sync coffee {coffee.id}: {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
 
-        skip += batch_size
+            skip += batch_size
+
+        # Sync all tastings
+        skip = 0
+        while True:
+            tastings = await tasting_repository.get_multi_all(db, skip=skip, limit=batch_size)
+            if not tastings:
+                break
+
+            for tasting in tastings:
+                try:
+                    # Get tasting with notes for full sync
+                    tasting_with_notes = await tasting_repository.get_with_notes(db, tasting.id)
+                    if tasting_with_notes:
+                        await graph_sync_repository.sync_tasting_full(graph_session, tasting_with_notes)
+                        tastings_synced += 1
+                except Exception as e:
+                    error_msg = f"Failed to sync tasting {tasting.id}: {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+
+            skip += batch_size
+
+        # Only iterate once - the generator provides a single session
+        break
 
     logger.info(
         "Completed full graph sync",

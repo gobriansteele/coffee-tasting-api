@@ -5,7 +5,7 @@ from uuid import UUID
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db import get_graph_session
-from app.db.database import AsyncSessionLocal
+from app.db.database import get_async_session
 from app.repositories.graph import graph_sync_repository
 from app.repositories.sql.coffee import coffee_repository
 from app.repositories.sql.flavor_tag import flavor_tag_repository
@@ -28,11 +28,14 @@ async def sync_roaster_to_graph(roaster_id: UUID, user_id: str | None = None) ->
 
     try:
         # Get roaster from PostgreSQL
-        async with AsyncSessionLocal() as db:
+        roaster = None
+        async for db in get_async_session():
             roaster = await roaster_repository.get(db, roaster_id)
-            if not roaster:
-                logger.warning("Roaster not found for graph sync", roaster_id=str(roaster_id))
-                return
+            break
+
+        if not roaster:
+            logger.warning("Roaster not found for graph sync", roaster_id=str(roaster_id))
+            return
 
         # Sync to graph
         async for graph_session in get_graph_session():
@@ -87,11 +90,14 @@ async def sync_coffee_to_graph(coffee_id: UUID, user_id: str | None = None) -> N
 
     try:
         # Get coffee with relationships from PostgreSQL
-        async with AsyncSessionLocal() as db:
+        coffee = None
+        async for db in get_async_session():
             coffee = await coffee_repository.get_with_flavor_tags(db, coffee_id)
-            if not coffee:
-                logger.warning("Coffee not found for graph sync", coffee_id=str(coffee_id))
-                return
+            break
+
+        if not coffee:
+            logger.warning("Coffee not found for graph sync", coffee_id=str(coffee_id))
+            return
 
         # Sync to graph
         async for graph_session in get_graph_session():
@@ -165,11 +171,14 @@ async def sync_flavor_tag_to_graph(flavor_tag_id: UUID) -> None:
 
     try:
         # Get flavor tag from PostgreSQL
-        async with AsyncSessionLocal() as db:
+        tag = None
+        async for db in get_async_session():
             tag = await flavor_tag_repository.get(db, flavor_tag_id)
-            if not tag:
-                logger.warning("Flavor tag not found for graph sync", flavor_tag_id=str(flavor_tag_id))
-                return
+            break
+
+        if not tag:
+            logger.warning("Flavor tag not found for graph sync", flavor_tag_id=str(flavor_tag_id))
+            return
 
         # Sync to graph
         async for graph_session in get_graph_session():
@@ -243,11 +252,14 @@ async def sync_tasting_to_graph(tasting_id: UUID) -> None:
 
     try:
         # Get tasting with relationships from PostgreSQL
-        async with AsyncSessionLocal() as db:
+        tasting = None
+        async for db in get_async_session():
             tasting = await tasting_repository.get_with_notes(db, tasting_id)
-            if not tasting:
-                logger.warning("Tasting not found for graph sync", tasting_id=str(tasting_id))
-                return
+            break
+
+        if not tasting:
+            logger.warning("Tasting not found for graph sync", tasting_id=str(tasting_id))
+            return
 
         # Sync to graph
         async for graph_session in get_graph_session():
