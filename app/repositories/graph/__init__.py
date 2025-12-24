@@ -1,4 +1,10 @@
 """Neo4j Graph repositories."""
 
-# Graph repositories will be added in Phase 2
-__all__: list[str] = []
+from .base import GraphRepository
+from .sync import GraphSyncRepository, graph_sync_repository
+
+__all__ = [
+    "GraphRepository",
+    "GraphSyncRepository",
+    "graph_sync_repository",
+]

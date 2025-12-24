@@ -15,7 +15,9 @@ from app.db import (
     close_graph_driver,
     create_graph_driver,
     create_postgresql_engine,
+    get_graph_session,
 )
+from app.repositories.graph import graph_sync_repository
 
 logger = get_logger(__name__)
 
@@ -44,6 +46,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             logger.warning("Failed to connect to Neo4j - graph features will be unavailable")
         else:
             logger.info("Neo4j graph database connected")
+            # Initialize graph constraints
+            async for session in get_graph_session():
+                await graph_sync_repository.ensure_constraints(session)
+                break
     else:
         logger.info("Neo4j not configured - graph features disabled")
 
