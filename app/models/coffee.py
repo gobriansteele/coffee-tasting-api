@@ -20,6 +20,7 @@ class ProcessingMethod(str, Enum):
     SEMI_WASHED = "semi_washed"
     WET_HULLED = "wet_hulled"
     CARBONIC_MACERATION = "carbonic_maceration"
+    ANAEROBIC = "anaerobic"
     OTHER = "other"
 
 
