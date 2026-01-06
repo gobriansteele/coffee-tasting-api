@@ -1,8 +1,10 @@
+import secrets
 from typing import Any, cast
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.security import validate_access_token
 
@@ -165,3 +167,45 @@ def require_role(allowed_roles: list[str]):
 
 # Convenience dependency for admin-only endpoints
 require_admin = require_role(["admin"])
+
+
+async def require_api_key(x_api_key: str | None = Header(None)) -> str:
+    """
+    Dependency to validate x-api-key header for admin operations.
+
+    This provides a simple static API key authentication mechanism for
+    manual admin operations (e.g., embedding trueup via Postman).
+
+    Args:
+        x_api_key: The API key from x-api-key header
+
+    Returns:
+        The validated API key
+
+    Raises:
+        HTTPException: If API key is missing, invalid, or not configured
+    """
+    if not settings.ADMIN_API_KEY:
+        logger.error("ADMIN_API_KEY is not configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin API key is not configured on this server",
+        )
+
+    if not x_api_key:
+        logger.warning("Request missing x-api-key header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="x-api-key header required",
+        )
+
+    # Use constant-time comparison to prevent timing attacks
+    if not secrets.compare_digest(x_api_key, settings.ADMIN_API_KEY):
+        logger.warning("Invalid API key provided")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
+
+    logger.debug("API key validated successfully")
+    return x_api_key

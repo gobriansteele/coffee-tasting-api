@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Rate limit requests per period")
     RATE_LIMIT_PERIOD: int = Field(default=60, description="Rate limit period in seconds")
 
+    # Admin API Key (for manual admin operations like embedding trueup)
+    ADMIN_API_KEY: str | None = Field(default=None, description="Static API key for admin operations")
+
     # OpenAI
     OPENAI_API_KEY: str | None = Field(default=None, description="OpenAI API key for recommendation engine")
     OPENAI_EMBEDDING_MODEL: str = Field(
