@@ -11,13 +11,11 @@ from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.db import (
     check_graph_connection,
-    check_postgresql_connection,
     close_graph_driver,
     create_graph_driver,
-    create_postgresql_engine,
     get_graph_session,
 )
-from app.repositories.graph import graph_sync_repository
+from app.repositories.graph import graph_repository
 
 logger = get_logger(__name__)
 
@@ -31,27 +29,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Configure logging
     configure_logging()
 
-    # Initialize PostgreSQL database
-    create_postgresql_engine()
-
-    # Check PostgreSQL connection
-    if not await check_postgresql_connection():
-        logger.error("Failed to connect to PostgreSQL")
-        raise RuntimeError("PostgreSQL connection failed")
-
-    # Initialize Neo4j graph database (optional - won't fail if not configured)
+    # Initialize Neo4j graph database
     if settings.neo4j_configured:
         await create_graph_driver()
         if not await check_graph_connection():
-            logger.warning("Failed to connect to Neo4j - graph features will be unavailable")
+            logger.error("Failed to connect to Neo4j")
+            raise RuntimeError("Neo4j connection failed")
         else:
             logger.info("Neo4j graph database connected")
             # Initialize graph constraints
             async for session in get_graph_session():
-                await graph_sync_repository.ensure_constraints(session)
+                await graph_repository.ensure_constraints(session)
                 break
     else:
-        logger.info("Neo4j not configured - graph features disabled")
+        logger.error("Neo4j not configured - this is required for the API to function")
+        raise RuntimeError("Neo4j is not configured. Set NEO4J_URI and NEO4J_PASSWORD.")
 
     logger.info("Application startup complete")
 

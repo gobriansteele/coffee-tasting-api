@@ -4,7 +4,6 @@ from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.models.coffee import Coffee, FlavorTag
 
 logger = get_logger(__name__)
 
@@ -63,9 +62,9 @@ class EmbeddingService:
 
     def build_coffee_text(
         self,
-        coffee: Coffee,
+        coffee: dict,
         roaster_name: str | None = None,
-        flavor_tag_names: list[str] | None = None,
+        flavor_names: list[str] | None = None,
     ) -> str:
         """Build text representation of a coffee for embedding.
 
@@ -73,9 +72,9 @@ class EmbeddingService:
         the semantic meaning of the coffee for similarity search.
 
         Args:
-            coffee: Coffee model instance
-            roaster_name: Optional roaster name (if not loaded on coffee)
-            flavor_tag_names: Optional list of flavor tag names (if not loaded)
+            coffee: Coffee dict with properties
+            roaster_name: Optional roaster name (if not in coffee dict)
+            flavor_names: Optional list of flavor names (if not in coffee dict)
 
         Returns:
             Text representation suitable for embedding
@@ -83,63 +82,65 @@ class EmbeddingService:
         parts: list[str] = []
 
         # Coffee name
-        if coffee.name:
-            parts.append(coffee.name)
+        if coffee.get("name"):
+            parts.append(coffee["name"])
 
         # Roaster
-        roaster = roaster_name or (coffee.roaster.name if coffee.roaster else None)
+        roaster = roaster_name
+        if not roaster and coffee.get("roaster"):
+            roaster = coffee["roaster"].get("name")
         if roaster:
             parts.append(f"from {roaster}")
 
         # Origin
         origin_parts = []
-        if coffee.origin_region:
-            origin_parts.append(coffee.origin_region)
-        if coffee.origin_country:
-            origin_parts.append(coffee.origin_country)
+        if coffee.get("origin_region"):
+            origin_parts.append(coffee["origin_region"])
+        if coffee.get("origin_country"):
+            origin_parts.append(coffee["origin_country"])
         if origin_parts:
             parts.append(f"origin: {', '.join(origin_parts)}")
 
         # Processing and roast
-        if coffee.processing_method:
-            parts.append(f"{coffee.processing_method.value} process")
-        if coffee.roast_level:
-            parts.append(f"{coffee.roast_level.value} roast")
+        if coffee.get("processing_method"):
+            parts.append(f"{coffee['processing_method']} process")
+        if coffee.get("roast_level"):
+            parts.append(f"{coffee['roast_level']} roast")
 
         # Variety
-        if coffee.variety:
-            parts.append(f"variety: {coffee.variety}")
+        if coffee.get("variety"):
+            parts.append(f"variety: {coffee['variety']}")
 
-        # Flavor tags
-        flavors = flavor_tag_names or (
-            [tag.name for tag in coffee.flavor_tags] if coffee.flavor_tags else None
-        )
+        # Flavors
+        flavors = flavor_names
+        if not flavors and coffee.get("flavors"):
+            flavors = [f.get("name") for f in coffee["flavors"] if f.get("name")]
         if flavors:
             parts.append(f"flavors: {', '.join(flavors)}")
 
         # Description (truncate if very long)
-        if coffee.description:
-            desc = coffee.description[:500] if len(coffee.description) > 500 else coffee.description
+        if coffee.get("description"):
+            desc = coffee["description"][:500] if len(coffee["description"]) > 500 else coffee["description"]
             parts.append(desc)
 
         return ". ".join(parts)
 
-    def build_flavor_tag_text(self, tag: FlavorTag) -> str:
-        """Build text representation of a flavor tag for embedding.
+    def build_flavor_text(self, flavor: dict) -> str:
+        """Build text representation of a flavor for embedding.
 
         Adds context to help the embedding model understand this is a
         coffee flavor descriptor.
 
         Args:
-            tag: FlavorTag model instance
+            flavor: Flavor dict with name and category
 
         Returns:
             Text representation suitable for embedding
         """
-        parts = [f"coffee flavor note: {tag.name}"]
+        parts = [f"coffee flavor note: {flavor['name']}"]
 
-        if tag.category:
-            parts.append(f"category: {tag.category}")
+        if flavor.get("category"):
+            parts.append(f"category: {flavor['category']}")
 
         return ". ".join(parts)
 

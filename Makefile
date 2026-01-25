@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint typecheck format run migrate upgrade downgrade clean
+.PHONY: help install dev test lint typecheck format run clean neo4j-reset neo4j-setup
 
 # Default target
 help:
@@ -15,10 +15,9 @@ help:
 	@echo "  typecheck   Run type checking (mypy)"
 	@echo "  format      Format code (ruff)"
 	@echo ""
-	@echo "Database:"
-	@echo "  migrate     Create new migration"
-	@echo "  upgrade     Apply migrations"
-	@echo "  downgrade   Rollback last migration"
+	@echo "Neo4j:"
+	@echo "  neo4j-reset   Reset Neo4j database (drops all data, constraints, indexes)"
+	@echo "  neo4j-setup   Set up Neo4j constraints and indexes"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean       Clean up cache files"
@@ -58,23 +57,12 @@ fix:
 	uv run ruff check --fix .
 	uv run ruff format .
 
-# Database migrations
-migrate:
-	@read -p "Enter migration message: " message; \
-	uv run alembic revision --autogenerate -m "$$message"
+# Neo4j database management
+neo4j-reset:
+	uv run python scripts/reset_neo4j.py
 
-upgrade:
-	uv run alembic upgrade head
-
-downgrade:
-	uv run alembic downgrade -1
-
-# Database utilities
-db-current:
-	uv run alembic current
-
-db-history:
-	uv run alembic history
+neo4j-setup:
+	uv run python scripts/setup_neo4j_constraints.py
 
 # Dependencies
 freeze:

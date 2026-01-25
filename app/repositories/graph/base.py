@@ -1,4 +1,5 @@
 """Base repository for Neo4j graph operations."""
+
 from typing import LiteralString
 
 from neo4j import AsyncSession
@@ -11,23 +12,50 @@ logger = get_logger(__name__)
 # Embedding dimensions for text-embedding-3-small
 EMBEDDING_DIMENSIONS = 1536
 
-# Constraint queries as literals
-_CONSTRAINT_USER: LiteralString = "CREATE CONSTRAINT user_id IF NOT EXISTS FOR (n:User) REQUIRE n.id IS UNIQUE"
-_CONSTRAINT_ROASTER: LiteralString = "CREATE CONSTRAINT roaster_id IF NOT EXISTS FOR (n:Roaster) REQUIRE n.id IS UNIQUE"
-_CONSTRAINT_COFFEE: LiteralString = "CREATE CONSTRAINT coffee_id IF NOT EXISTS FOR (n:Coffee) REQUIRE n.id IS UNIQUE"
-_CONSTRAINT_FLAVOR_TAG: LiteralString = "CREATE CONSTRAINT flavor_tag_id IF NOT EXISTS FOR (n:FlavorTag) REQUIRE n.id IS UNIQUE"
-_CONSTRAINT_TASTING: LiteralString = "CREATE CONSTRAINT tasting_session_id IF NOT EXISTS FOR (n:TastingSession) REQUIRE n.id IS UNIQUE"
+# Constraint queries as literals (updated for new schema)
+_CONSTRAINT_COFFEE_DRINKER: LiteralString = (
+    "CREATE CONSTRAINT coffee_drinker_id IF NOT EXISTS FOR (u:CoffeeDrinker) REQUIRE u.id IS UNIQUE"
+)
+_CONSTRAINT_ROASTER: LiteralString = (
+    "CREATE CONSTRAINT roaster_id IF NOT EXISTS FOR (r:Roaster) REQUIRE r.id IS UNIQUE"
+)
+_CONSTRAINT_COFFEE: LiteralString = (
+    "CREATE CONSTRAINT coffee_id IF NOT EXISTS FOR (c:Coffee) REQUIRE c.id IS UNIQUE"
+)
+_CONSTRAINT_FLAVOR_ID: LiteralString = (
+    "CREATE CONSTRAINT flavor_id IF NOT EXISTS FOR (f:Flavor) REQUIRE f.id IS UNIQUE"
+)
+_CONSTRAINT_FLAVOR_NAME: LiteralString = (
+    "CREATE CONSTRAINT flavor_name IF NOT EXISTS FOR (f:Flavor) REQUIRE f.name IS UNIQUE"
+)
+_CONSTRAINT_TASTING: LiteralString = (
+    "CREATE CONSTRAINT tasting_id IF NOT EXISTS FOR (t:Tasting) REQUIRE t.id IS UNIQUE"
+)
+_CONSTRAINT_RATING: LiteralString = (
+    "CREATE CONSTRAINT rating_id IF NOT EXISTS FOR (r:Rating) REQUIRE r.id IS UNIQUE"
+)
+
+# Regular indexes for common queries
+_INDEX_COFFEE_ORIGIN: LiteralString = (
+    "CREATE INDEX coffee_origin IF NOT EXISTS FOR (c:Coffee) ON (c.origin_country)"
+)
+_INDEX_COFFEE_ROAST: LiteralString = (
+    "CREATE INDEX coffee_roast IF NOT EXISTS FOR (c:Coffee) ON (c.roast_level)"
+)
+_INDEX_FLAVOR_CATEGORY: LiteralString = (
+    "CREATE INDEX flavor_category IF NOT EXISTS FOR (f:Flavor) ON (f.category)"
+)
 
 # Vector index queries (Neo4j 5.11+)
 _VECTOR_INDEX_COFFEE: LiteralString = """
 CREATE VECTOR INDEX coffee_embedding IF NOT EXISTS
-FOR (n:Coffee) ON n.embedding
+FOR (c:Coffee) ON c.embedding
 OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}
 """
 
-_VECTOR_INDEX_FLAVOR_TAG: LiteralString = """
-CREATE VECTOR INDEX flavor_tag_embedding IF NOT EXISTS
-FOR (n:FlavorTag) ON n.embedding
+_VECTOR_INDEX_FLAVOR: LiteralString = """
+CREATE VECTOR INDEX flavor_embedding IF NOT EXISTS
+FOR (f:Flavor) ON f.embedding
 OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}
 """
 
@@ -35,18 +63,12 @@ OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 
 class GraphRepository:
     """Base class for Neo4j graph operations.
 
-    Provides error handling with graceful degradation - graph failures
-    are logged but don't crash the application.
-
-    Subclasses define their own Cypher queries as module-level constants
-    and call session.run() directly with those literals.
+    Provides error handling and constraint setup for the Neo4j-only architecture.
     """
+
     @staticmethod
     def _handle_graph_error(error: Exception, operation: str) -> None:
-        """Log graph errors without failing the application.
-
-        Implements graceful degradation - graph operations are supplementary
-        to the main PostgreSQL data store, so failures shouldn't break the API.
+        """Log graph errors.
 
         Args:
             error: The exception that occurred
@@ -72,7 +94,7 @@ class GraphRepository:
             )
 
     async def ensure_constraints(self, session: AsyncSession) -> None:
-        """Create unique constraints on node IDs if they don't exist.
+        """Create unique constraints and indexes if they don't exist.
 
         Should be called once on application startup after Neo4j connection
         is established. Constraints ensure MERGE operations are performant.
@@ -80,40 +102,50 @@ class GraphRepository:
         Args:
             session: Neo4j async session
         """
-        try:
-            await session.run(_CONSTRAINT_USER)
-        except Exception as e:
-            self._handle_graph_error(e, "create constraint for User")
+        # Unique constraints
+        constraints = [
+            (_CONSTRAINT_COFFEE_DRINKER, "CoffeeDrinker"),
+            (_CONSTRAINT_ROASTER, "Roaster"),
+            (_CONSTRAINT_COFFEE, "Coffee"),
+            (_CONSTRAINT_FLAVOR_ID, "Flavor.id"),
+            (_CONSTRAINT_FLAVOR_NAME, "Flavor.name"),
+            (_CONSTRAINT_TASTING, "Tasting"),
+            (_CONSTRAINT_RATING, "Rating"),
+        ]
 
-        try:
-            await session.run(_CONSTRAINT_ROASTER)
-        except Exception as e:
-            self._handle_graph_error(e, "create constraint for Roaster")
+        for query, name in constraints:
+            try:
+                await session.run(query)
+            except Exception as e:
+                self._handle_graph_error(e, f"create constraint for {name}")
 
-        try:
-            await session.run(_CONSTRAINT_COFFEE)
-        except Exception as e:
-            self._handle_graph_error(e, "create constraint for Coffee")
+        # Regular indexes
+        indexes = [
+            (_INDEX_COFFEE_ORIGIN, "coffee_origin"),
+            (_INDEX_COFFEE_ROAST, "coffee_roast"),
+            (_INDEX_FLAVOR_CATEGORY, "flavor_category"),
+        ]
 
-        try:
-            await session.run(_CONSTRAINT_FLAVOR_TAG)
-        except Exception as e:
-            self._handle_graph_error(e, "create constraint for FlavorTag")
-
-        try:
-            await session.run(_CONSTRAINT_TASTING)
-        except Exception as e:
-            self._handle_graph_error(e, "create constraint for TastingSession")
+        for query, name in indexes:
+            try:
+                await session.run(query)
+            except Exception as e:
+                self._handle_graph_error(e, f"create index {name}")
 
         # Vector indexes for embedding similarity search
-        try:
-            await session.run(_VECTOR_INDEX_COFFEE)
-        except Exception as e:
-            self._handle_graph_error(e, "create vector index for Coffee")
+        vector_indexes = [
+            (_VECTOR_INDEX_COFFEE, "coffee_embedding"),
+            (_VECTOR_INDEX_FLAVOR, "flavor_embedding"),
+        ]
 
-        try:
-            await session.run(_VECTOR_INDEX_FLAVOR_TAG)
-        except Exception as e:
-            self._handle_graph_error(e, "create vector index for FlavorTag")
+        for query, name in vector_indexes:
+            try:
+                await session.run(query)
+            except Exception as e:
+                self._handle_graph_error(e, f"create vector index {name}")
 
-        logger.info("Graph constraints and vector indexes initialized")
+        logger.info("Graph constraints and indexes initialized")
+
+
+# Global instance for use in app startup
+graph_repository = GraphRepository()

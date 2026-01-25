@@ -1,13 +1,12 @@
 """Neo4j Graph repositories."""
 
-from .base import GraphRepository
+from .base import EMBEDDING_DIMENSIONS, GraphRepository, graph_repository
 from .query import GraphQueryRepository, graph_query_repository
-from .sync import GraphSyncRepository, graph_sync_repository
 
 __all__ = [
+    "EMBEDDING_DIMENSIONS",
     "GraphRepository",
     "GraphQueryRepository",
-    "GraphSyncRepository",
+    "graph_repository",
     "graph_query_repository",
-    "graph_sync_repository",
 ]

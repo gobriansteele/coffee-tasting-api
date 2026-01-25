@@ -3,7 +3,9 @@ from typing import Any, cast
 
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from neo4j import AsyncSession
 
+from app.api.deps.graph import get_graph_db
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.security import validate_access_token
@@ -12,6 +14,9 @@ logger = get_logger(__name__)
 
 # HTTP Bearer token scheme
 security = HTTPBearer(auto_error=False)
+
+# Cypher query for ensuring user exists
+_MERGE_USER_QUERY = "MERGE (u:CoffeeDrinker {id: $user_id})"
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict[str, Any]:
@@ -69,6 +74,35 @@ async def get_current_user_id(current_user: dict[str, Any] = Depends(get_current
     if not user_id or not isinstance(user_id, str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user ID in token")
     return cast(str, user_id)
+
+
+async def ensure_user_exists(
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_graph_db),
+) -> str:
+    """
+    Ensures CoffeeDrinker node exists for authenticated user.
+
+    Uses MERGE for idempotent creation - safe to call on every request.
+    This dependency validates the JWT AND ensures the user node exists in Neo4j.
+
+    Args:
+        user_id: The authenticated user's ID from JWT
+        session: Neo4j async session
+
+    Returns:
+        The user ID string
+    """
+    try:
+        await session.run(_MERGE_USER_QUERY, user_id=user_id)
+        logger.debug(f"Ensured CoffeeDrinker exists for user: {user_id}")
+    except Exception as e:
+        logger.error(f"Failed to ensure user exists in Neo4j: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to initialize user session",
+        ) from e
+    return user_id
 
 
 def require_user_access(resource_user_id: str, current_user_id: str) -> None:

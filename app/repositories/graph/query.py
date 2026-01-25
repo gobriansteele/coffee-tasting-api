@@ -19,7 +19,7 @@ RETURN c.id AS id
 """
 
 _GET_FLAVOR_TAGS_WITHOUT_EMBEDDING: LiteralString = """
-MATCH (f:FlavorTag)
+MATCH (f:Flavor)
 WHERE f.embedding IS NULL
 RETURN f.id AS id
 """
@@ -33,7 +33,7 @@ RETURN count(c) AS count
 """
 
 _COUNT_FLAVOR_TAGS_WITHOUT_EMBEDDING: LiteralString = """
-MATCH (f:FlavorTag)
+MATCH (f:Flavor)
 WHERE f.embedding IS NULL
 RETURN count(f) AS count
 """
@@ -44,7 +44,7 @@ RETURN count(c) AS count
 """
 
 _COUNT_ALL_FLAVOR_TAGS: LiteralString = """
-MATCH (f:FlavorTag)
+MATCH (f:Flavor)
 RETURN count(f) AS count
 """
 
@@ -75,23 +75,23 @@ class GraphQueryRepository(GraphRepository):
             self._handle_graph_error(e, "get coffees without embedding")
             return []
 
-    async def get_flavor_tag_ids_without_embedding(self, session: AsyncSession) -> list[str]:
-        """Get IDs of all FlavorTag nodes that don't have embeddings.
+    async def get_flavor_ids_without_embedding(self, session: AsyncSession) -> list[str]:
+        """Get IDs of all Flavor nodes that don't have embeddings.
 
         Args:
             session: Neo4j async session
 
         Returns:
-            List of flavor tag ID strings
+            List of flavor ID strings
         """
         try:
             result = await session.run(_GET_FLAVOR_TAGS_WITHOUT_EMBEDDING)
             records = await result.data()
             ids = [record["id"] for record in records]
-            logger.debug("Found flavor tags without embedding", count=len(ids))
+            logger.debug("Found flavors without embedding", count=len(ids))
             return ids
         except Exception as e:
-            self._handle_graph_error(e, "get flavor tags without embedding")
+            self._handle_graph_error(e, "get flavors without embedding")
             return []
 
     async def count_coffees_without_embedding(self, session: AsyncSession) -> int:
@@ -111,21 +111,21 @@ class GraphQueryRepository(GraphRepository):
             self._handle_graph_error(e, "count coffees without embedding")
             return 0
 
-    async def count_flavor_tags_without_embedding(self, session: AsyncSession) -> int:
-        """Count FlavorTag nodes without embeddings.
+    async def count_flavors_without_embedding(self, session: AsyncSession) -> int:
+        """Count Flavor nodes without embeddings.
 
         Args:
             session: Neo4j async session
 
         Returns:
-            Count of flavor tags missing embeddings
+            Count of flavors missing embeddings
         """
         try:
             result = await session.run(_COUNT_FLAVOR_TAGS_WITHOUT_EMBEDDING)
             record = await result.single()
             return record["count"] if record else 0
         except Exception as e:
-            self._handle_graph_error(e, "count flavor tags without embedding")
+            self._handle_graph_error(e, "count flavors without embedding")
             return 0
 
     async def count_all_coffees(self, session: AsyncSession) -> int:
@@ -145,21 +145,21 @@ class GraphQueryRepository(GraphRepository):
             self._handle_graph_error(e, "count all coffees")
             return 0
 
-    async def count_all_flavor_tags(self, session: AsyncSession) -> int:
-        """Count all FlavorTag nodes in the graph.
+    async def count_all_flavors(self, session: AsyncSession) -> int:
+        """Count all Flavor nodes in the graph.
 
         Args:
             session: Neo4j async session
 
         Returns:
-            Total count of flavor tags
+            Total count of flavors
         """
         try:
             result = await session.run(_COUNT_ALL_FLAVOR_TAGS)
             record = await result.single()
             return record["count"] if record else 0
         except Exception as e:
-            self._handle_graph_error(e, "count all flavor tags")
+            self._handle_graph_error(e, "count all flavors")
             return 0
 
 

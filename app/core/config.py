@@ -1,4 +1,4 @@
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,10 +33,6 @@ class Settings(BaseSettings):
         elif isinstance(v, str):
             return [v]
         raise ValueError(v)
-
-    # Database
-    DATABASE_URL: PostgresDsn | None = Field(default=None, description="Database connection URL")
-    DATABASE_URL_TEST: PostgresDsn | None = Field(default=None, description="Test database connection URL")
 
     # Supabase
     SUPABASE_URL: str | None = Field(default=None, description="Supabase project URL")

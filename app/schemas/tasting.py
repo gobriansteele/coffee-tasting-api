@@ -1,119 +1,103 @@
+"""Tasting and Rating schemas for Neo4j-only architecture."""
+
 from datetime import datetime
-from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..models.tasting import BrewMethod, GrindSize
-from .flavor_tag import FlavorTagResponse
+from .coffee import CoffeeResponse
+from .enums import BrewMethod, GrindSize
+from .flavor import FlavorResponse
 
 
-class TastingNoteBase(BaseModel):
-    """Base tasting note schema."""
-
-    intensity: int | None = Field(None, ge=1, le=10, description="Intensity (1-10)")
-    notes: str | None = Field(None, description="Additional notes about this flavor")
-    aroma: bool = Field(False, description="Detected in aroma")
-    flavor: bool = Field(False, description="Detected in flavor")
-    aftertaste: bool = Field(False, description="Detected in aftertaste")
+# --- Detected Flavor Schemas ---
 
 
-class TastingNoteCreate(TastingNoteBase):
-    """Schema for creating a tasting note."""
+class DetectedFlavorCreate(BaseModel):
+    """Schema for creating a detected flavor in a tasting."""
 
-    flavor_name: str = Field(..., min_length=1, description="Name of the flavor detected")
+    flavor_id: UUID = Field(..., description="ID of the flavor detected")
+    intensity: int = Field(..., ge=1, le=10, description="Intensity of the flavor (1-10)")
 
 
-class TastingNoteResponse(TastingNoteBase):
-    """Schema for tasting note responses."""
+class DetectedFlavorResponse(BaseModel):
+    """Schema for detected flavor responses."""
+
+    flavor: FlavorResponse
+    intensity: int = Field(..., ge=1, le=10, description="Intensity of the flavor (1-10)")
+
+
+# --- Rating Schemas ---
+
+
+class RatingCreate(BaseModel):
+    """Schema for creating a rating."""
+
+    score: int = Field(..., ge=1, le=5, description="Rating score (1-5)")
+    notes: str | None = Field(None, description="Rating notes")
+
+
+class RatingUpdate(BaseModel):
+    """Schema for updating a rating."""
+
+    score: int | None = Field(None, ge=1, le=5, description="Rating score (1-5)")
+    notes: str | None = Field(None, description="Rating notes")
+
+
+class RatingResponse(BaseModel):
+    """Schema for rating responses."""
 
     id: UUID
-    tasting_session_id: UUID
-    flavor_tag: FlavorTagResponse
+    score: int = Field(..., ge=1, le=5, description="Rating score (1-5)")
+    notes: str | None = None
     created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
-class TastingSessionBase(BaseModel):
-    """Base tasting session schema."""
-
-    coffee_id: UUID = Field(..., description="ID of the coffee")
-
-    # Brewing parameters
-    brew_method: BrewMethod = Field(..., description="Brewing method used")
-    grind_size: GrindSize | None = Field(None, description="Grind size")
-
-    # Measurements
-    coffee_dose: Decimal | None = Field(None, ge=0, decimal_places=1, description="Coffee dose (grams)")
-    water_amount: Decimal | None = Field(None, ge=0, decimal_places=1, description="Water amount (grams/ml)")
-    water_temperature: int | None = Field(None, ge=0, le=100, description="Water temperature (celsius)")
-    brew_time: str | None = Field(None, max_length=20, description="Brew time (e.g., '4:30')")
-
-    # Equipment
-    grinder: str | None = Field(None, max_length=255, description="Grinder used")
-    brewing_device: str | None = Field(None, max_length=255, description="Brewing device")
-    filter_type: str | None = Field(None, max_length=100, description="Filter type")
-
-    # Session notes
-    session_notes: str | None = Field(None, description="Session notes")
-    overall_rating: int | None = Field(None, ge=1, le=10, description="Overall rating (1-10)")
-    would_buy_again: bool | None = Field(None, description="Would buy again")
+# --- Tasting Schemas ---
 
 
-class TastingSessionCreate(TastingSessionBase):
-    """Schema for creating a tasting session."""
+class TastingCreate(BaseModel):
+    """Schema for creating a tasting."""
 
-    tasting_notes: list[TastingNoteCreate] | None = Field(default_factory=list, description="Tasting notes")
-
-
-class TastingSessionUpdate(BaseModel):
-    """Schema for updating a tasting session."""
-
-    coffee_id: UUID | None = Field(None, description="ID of the coffee")
-
-    # Brewing parameters
+    coffee_id: UUID = Field(..., description="ID of the coffee being tasted")
     brew_method: BrewMethod | None = Field(None, description="Brewing method used")
-    grind_size: GrindSize | None = Field(None, description="Grind size")
-
-    # Measurements
-    coffee_dose: Decimal | None = Field(None, ge=0, decimal_places=1, description="Coffee dose (grams)")
-    water_amount: Decimal | None = Field(None, ge=0, decimal_places=1, description="Water amount (grams/ml)")
-    water_temperature: int | None = Field(None, ge=0, le=140, description="Water temperature (celsius)")
-    brew_time: str | None = Field(None, max_length=20, description="Brew time")
-
-    # Equipment
-    grinder: str | None = Field(None, max_length=255, description="Grinder used")
-    brewing_device: str | None = Field(None, max_length=255, description="Brewing device")
-    filter_type: str | None = Field(None, max_length=100, description="Filter type")
-
-    # Session notes
-    session_notes: str | None = Field(None, description="Session notes")
-    overall_rating: int | None = Field(None, ge=1, le=10, description="Overall rating (1-10)")
-    would_buy_again: bool | None = Field(None, description="Would buy again")
+    grind_size: GrindSize | None = Field(None, description="Grind size used")
+    notes: str | None = Field(None, description="Tasting notes")
+    detected_flavors: list[DetectedFlavorCreate] | None = Field(
+        None, description="Flavors detected during tasting"
+    )
+    rating: RatingCreate | None = Field(None, description="Optional rating for this tasting")
 
 
-class TastingSessionResponse(TastingSessionBase):
-    """Schema for tasting session responses."""
+class TastingUpdate(BaseModel):
+    """Schema for updating a tasting."""
+
+    brew_method: BrewMethod | None = Field(None, description="Brewing method used")
+    grind_size: GrindSize | None = Field(None, description="Grind size used")
+    notes: str | None = Field(None, description="Tasting notes")
+    detected_flavors: list[DetectedFlavorCreate] | None = Field(
+        None, description="Flavors detected (replaces existing)"
+    )
+
+
+class TastingResponse(BaseModel):
+    """Schema for tasting responses."""
 
     id: UUID
-    coffee_name: str
-    roaster_name: str
-    user_id: str
+    coffee_id: UUID
+    brew_method: str | None = None
+    grind_size: str | None = None
+    notes: str | None = None
     created_at: datetime
-    updated_at: datetime
-    tasting_notes: list[TastingNoteResponse] = Field(default_factory=list)
-
-    class Config:
-        from_attributes = True
+    coffee: CoffeeResponse | None = None
+    detected_flavors: list[DetectedFlavorResponse] = Field(default_factory=list)
+    rating: RatingResponse | None = None
 
 
-class TastingSessionListResponse(BaseModel):
-    """Schema for tasting session list responses."""
+class TastingListResponse(BaseModel):
+    """Schema for tasting list responses."""
 
-    tastings: list[TastingSessionResponse]
+    items: list[TastingResponse]
     total: int
-    page: int
-    size: int
+    skip: int
+    limit: int
