@@ -316,6 +316,50 @@ async def create_tasting(
 
 ## Phase 5: Neo4j Schema Setup
 
+### Database Reset Script
+
+Before setting up the new schema, run this script to fully reset the database (drops all constraints, indexes, and data):
+
+```cypher
+// Step 1: Drop all constraints
+CALL apoc.schema.assert({}, {});
+
+// If APOC not available, manually drop each constraint:
+// SHOW CONSTRAINTS;
+// DROP CONSTRAINT constraint_name;
+
+// Step 2: Drop all indexes (non-constraint indexes)
+SHOW INDEXES YIELD name, type WHERE type <> 'LOOKUP'
+// Then: DROP INDEX index_name FOR EACH
+
+// Step 3: Delete all nodes and relationships
+MATCH (n) DETACH DELETE n;
+```
+
+Or as a Python script (`scripts/reset_neo4j.py`):
+```python
+from neo4j import GraphDatabase
+
+def reset_database(uri: str, user: str, password: str):
+    driver = GraphDatabase.driver(uri, auth=(user, password))
+    with driver.session() as session:
+        # Drop all constraints
+        constraints = session.run("SHOW CONSTRAINTS").data()
+        for c in constraints:
+            session.run(f"DROP CONSTRAINT {c['name']}")
+
+        # Drop all indexes (except lookup indexes)
+        indexes = session.run("SHOW INDEXES YIELD name, type WHERE type <> 'LOOKUP'").data()
+        for i in indexes:
+            session.run(f"DROP INDEX {i['name']}")
+
+        # Delete all data
+        session.run("MATCH (n) DETACH DELETE n")
+
+    driver.close()
+    print("Database reset complete")
+```
+
 ### Constraints (run once on startup or via script)
 
 ```cypher
