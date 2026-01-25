@@ -390,6 +390,53 @@ class DetectedFlavorCreate(BaseModel):
 | `PATCH` | `/me` | Update profile (first_name, last_name, display_name) |
 | `GET` | `/me/flavor-profile` | User's detected flavor tendencies |
 
+### Pagination
+
+All list endpoints support pagination via query parameters.
+
+#### Query Parameters
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `skip` | int | 0 | Number of records to skip |
+| `limit` | int | 20 | Max records to return (max: 100) |
+
+#### Paginated Endpoints
+
+```
+GET /roasters?skip=0&limit=20
+GET /coffees?skip=0&limit=20&roaster_id={uuid}
+GET /flavors?skip=0&limit=50&category={string}
+GET /tastings?skip=0&limit=20&coffee_id={uuid}
+GET /recommendations/similar/{coffee_id}?limit=10
+GET /recommendations/by-flavor?flavor_ids=x,y&limit=20&exclude_tasted=true
+```
+
+#### Response Shape
+
+```json
+{
+  "items": [...],
+  "total": 47,
+  "skip": 0,
+  "limit": 20
+}
+```
+
+#### Neo4j Query Pattern
+
+```cypher
+// Get paginated results
+MATCH (u:CoffeeDrinker {id: $user_id})-[:CREATED]->(c:Coffee)
+RETURN c
+ORDER BY c.created_at DESC
+SKIP $skip LIMIT $limit
+
+// Get total count
+MATCH (u:CoffeeDrinker {id: $user_id})-[:CREATED]->(c:Coffee)
+RETURN count(c) as total
+```
+
 ### Endpoint Changes from Current API
 
 **Remove:**
