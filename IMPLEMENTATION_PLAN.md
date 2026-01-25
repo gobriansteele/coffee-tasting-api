@@ -79,6 +79,115 @@ Simplify the coffee-tasting-api from a dual-database architecture (Postgres + Ne
 
 ---
 
+## Authentication
+
+### Overview
+
+Authentication uses **Supabase** for user management (signup, login, password reset). The API validates Supabase JWTs and ensures user nodes exist in Neo4j.
+
+- Supabase handles: User signup, login, password management, JWT issuance
+- API handles: JWT validation, CoffeeDrinker node creation, authorization
+
+### Protected Endpoints
+
+| Endpoint Category | Auth Required |
+|-------------------|---------------|
+| `/roasters/*` | Yes |
+| `/coffees/*` | Yes |
+| `/flavors/*` | Yes |
+| `/tastings/*` | Yes |
+| `/recommendations/*` | Yes |
+| `/me/*` | Yes |
+| `/health` | No |
+
+### Auth Flow: New User
+
+```
+1. User signs up via Supabase (email/password)
+   └── Supabase creates user, returns JWT
+
+2. User makes first API request with JWT
+   └── Header: Authorization: Bearer <jwt>
+
+3. API validates JWT (app/core/security.py)
+   ├── Verify signature with SUPABASE_JWT_SECRET
+   ├── Check expiration, audience
+   └── Extract user_id from "sub" claim
+
+4. ensure_user_exists dependency runs
+   └── MERGE (u:CoffeeDrinker {id: $user_id})
+   └── Creates node if not exists, no-op if exists
+
+5. Request proceeds, user can now create/read resources
+```
+
+### Auth Flow: Existing User
+
+```
+1. User logs in via Supabase
+   └── Supabase validates credentials, returns JWT
+
+2. User makes API request with JWT
+
+3. API validates JWT, extracts user_id
+
+4. ensure_user_exists dependency runs
+   └── MERGE is no-op (node already exists)
+
+5. Request proceeds normally
+```
+
+### Implementation
+
+**Dependency to ensure CoffeeDrinker exists** (`app/api/deps/auth.py`):
+
+```python
+async def ensure_user_exists(
+    user_id: str = Depends(get_current_user_id),
+    graph: GraphDB = Depends(get_graph),
+) -> str:
+    """
+    Ensures CoffeeDrinker node exists for authenticated user.
+    Uses MERGE for idempotent creation - safe to call on every request.
+    """
+    await graph.run("""
+        MERGE (u:CoffeeDrinker {id: $user_id})
+    """, user_id=user_id)
+    return user_id
+```
+
+**Usage in endpoints:**
+
+```python
+@router.get("/")
+async def list_roasters(
+    user_id: str = Depends(ensure_user_exists),  # <-- Validates JWT + ensures node exists
+    repo: RoasterRepository = Depends(get_roaster_repo),
+):
+    return await repo.list_all(user_id)
+```
+
+### Profile Management
+
+Users can optionally update their profile via `PATCH /me`:
+
+```python
+class ProfileUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    display_name: str | None = None
+
+@router.patch("/me")
+async def update_profile(
+    data: ProfileUpdate,
+    user_id: str = Depends(ensure_user_exists),
+    repo: UserRepository = Depends(get_user_repo),
+):
+    return await repo.update(user_id, data)
+```
+
+---
+
 ## Phase 1: Remove Postgres Infrastructure
 
 ### Files to Delete
@@ -278,6 +387,7 @@ class DetectedFlavorCreate(BaseModel):
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/me` | Current user info |
+| `PATCH` | `/me` | Update profile (first_name, last_name, display_name) |
 | `GET` | `/me/flavor-profile` | User's detected flavor tendencies |
 
 ### Endpoint Changes from Current API
