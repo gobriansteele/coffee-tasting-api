@@ -8,32 +8,74 @@ Simplify the coffee-tasting-api from a dual-database architecture (Postgres + Ne
 
 ### Nodes
 
-| Node | Properties |
-|------|------------|
-| `CoffeeDrinker` | id (auth user id), email, name |
-| `Roaster` | id, name, location, website, description, created_at |
-| `Coffee` | id, name, origin_country, origin_region, processing_method, variety, roast_level, description, created_at |
-| `Flavor` | id, name, category |
-| `Tasting` | id, brew_method, grind_size, water_amount, water_temp, brew_time, notes, created_at |
-| `Rating` | id, score (1-5), would_buy_again, notes, created_at |
+#### CoffeeDrinker
+| Property | Type | Required | Notes |
+|----------|------|----------|-------|
+| `id` | string | yes | Auth user ID (from Supabase) |
+| `email` | string | no | |
+| `first_name` | string | no | |
+| `last_name` | string | no | |
+| `display_name` | string | no | Optional override for display |
+
+#### Roaster
+| Property | Type | Required | Notes |
+|----------|------|----------|-------|
+| `id` | uuid | yes | Generated |
+| `name` | string | yes | |
+| `location` | string | no | City, state, country |
+| `website` | string | no | URL |
+| `description` | string | no | |
+| `created_at` | datetime | yes | |
+
+#### Coffee
+| Property | Type | Required | Embedded | Notes |
+|----------|------|----------|----------|-------|
+| `id` | uuid | yes | | Generated |
+| `name` | string | yes | | |
+| `origin_country` | string | no | | |
+| `origin_region` | string | no | | |
+| `processing_method` | enum | no | | washed, natural, honey, anaerobic |
+| `variety` | string | no | | bourbon, gesha, typica, etc. |
+| `roast_level` | enum | no | | light, medium, medium_dark, dark |
+| `description` | string | no | **yes** | For semantic search |
+| `created_at` | datetime | yes | | |
+
+#### Flavor
+| Property | Type | Required | Embedded | Notes |
+|----------|------|----------|----------|-------|
+| `id` | uuid | yes | | Generated |
+| `name` | string | yes | **yes** | Unique - "blueberry", "chocolate" |
+| `category` | string | no | **yes** | "fruity", "nutty", "sweet", etc. |
+
+#### Tasting
+| Property | Type | Required | Notes |
+|----------|------|----------|-------|
+| `id` | uuid | yes | Generated |
+| `brew_method` | enum | no | pourover, espresso, french_press, aeropress, etc. |
+| `grind_size` | enum | no | fine, medium_fine, medium, medium_coarse, coarse |
+| `notes` | string | no | Free-form tasting notes |
+| `created_at` | datetime | yes | |
+
+#### Rating
+| Property | Type | Required | Notes |
+|----------|------|----------|-------|
+| `id` | uuid | yes | Generated |
+| `score` | int | yes | 1-5 |
+| `notes` | string | no | Rating-specific notes |
+| `created_at` | datetime | yes | |
 
 ### Relationships
 
-```
-(Roaster)-[:ROASTS]->(Coffee)
-(Coffee)-[:HAS_FLAVOR]->(Flavor)
-(CoffeeDrinker)-[:LOGGED]->(Tasting)
-(Tasting)-[:OF]->(Coffee)
-(Tasting)-[:DETECTED {intensity: 1-10}]->(Flavor)
-(Tasting)-[:HAS]->(Rating)
-```
-
-### Ownership/Audit
-
-```
-(CoffeeDrinker)-[:CREATED]->(Roaster)
-(CoffeeDrinker)-[:CREATED]->(Coffee)
-```
+| Relationship | From | To | Properties |
+|--------------|------|----|----|
+| `ROASTS` | Roaster | Coffee | none |
+| `HAS_FLAVOR` | Coffee | Flavor | none (expected flavors) |
+| `CREATED` | CoffeeDrinker | Roaster | none |
+| `CREATED` | CoffeeDrinker | Coffee | none |
+| `LOGGED` | CoffeeDrinker | Tasting | none |
+| `OF` | Tasting | Coffee | none |
+| `DETECTED` | Tasting | Flavor | `intensity` (int, 1-10) |
+| `HAS` | Tasting | Rating | none |
 
 ---
 
@@ -156,28 +198,21 @@ app/schemas/
 
 ### Key Schema Changes
 
-**TastingCreate** - Single request creates tasting + rating + detected flavors:
+**TastingCreate** - Single request creates tasting with detected flavors:
 ```python
 class TastingCreate(BaseModel):
     coffee_id: str
 
     # Brew parameters
-    brew_method: BrewMethod
+    brew_method: BrewMethod | None = None
     grind_size: GrindSize | None = None
-    water_amount: float | None = None
-    water_temp: float | None = None
-    brew_time: int | None = None  # seconds
     notes: str | None = None
-
-    # Rating (creates Rating node)
-    rating: RatingCreate
 
     # Detected flavors (creates DETECTED relationships)
     detected_flavors: list[DetectedFlavorCreate] = []
 
 class RatingCreate(BaseModel):
     score: int  # 1-5
-    would_buy_again: bool
     notes: str | None = None
 
 class DetectedFlavorCreate(BaseModel):
