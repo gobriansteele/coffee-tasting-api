@@ -189,7 +189,63 @@ class DetectedFlavorCreate(BaseModel):
 
 ## Phase 4: Update API Endpoints
 
-### Endpoint Changes
+### Full Endpoint List
+
+#### Roasters
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/roasters` | Create a roaster |
+| `GET` | `/roasters` | List user's roasters |
+| `GET` | `/roasters/{id}` | Get roaster by ID |
+| `PATCH` | `/roasters/{id}` | Update a roaster |
+| `DELETE` | `/roasters/{id}` | Delete a roaster |
+
+#### Coffees
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/coffees` | Create a coffee (links to roaster, sets expected flavors) |
+| `GET` | `/coffees` | List user's coffees |
+| `GET` | `/coffees/{id}` | Get coffee by ID (includes roaster, flavors) |
+| `PATCH` | `/coffees/{id}` | Update a coffee |
+| `DELETE` | `/coffees/{id}` | Delete a coffee |
+
+#### Flavors
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/flavors` | Create a flavor |
+| `GET` | `/flavors` | List all flavors (optionally filter by category) |
+| `GET` | `/flavors/{id}` | Get flavor by ID |
+
+#### Tastings
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/tastings` | Create a tasting for a coffee (with detected flavors) |
+| `GET` | `/tastings` | List user's tastings |
+| `GET` | `/tastings/{id}` | Get tasting by ID (includes coffee, detected flavors, rating) |
+| `PATCH` | `/tastings/{id}` | Update a tasting |
+| `DELETE` | `/tastings/{id}` | Delete a tasting |
+
+#### Ratings
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/tastings/{tasting_id}/rating` | Create rating for a tasting |
+| `GET` | `/tastings/{tasting_id}/rating` | Get rating for a tasting |
+| `PATCH` | `/tastings/{tasting_id}/rating` | Update rating |
+| `DELETE` | `/tastings/{tasting_id}/rating` | Delete rating |
+
+#### Recommendations
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/recommendations/similar/{coffee_id}` | Coffees with similar flavor profiles |
+| `GET` | `/recommendations/by-flavor` | Coffees matching flavors (`?flavor_ids=x,y&exclude_tasted=true`) |
+
+#### User Profile
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/me` | Current user info |
+| `GET` | `/me/flavor-profile` | User's detected flavor tendencies |
+
+### Endpoint Changes from Current API
 
 **Remove:**
 - `POST /admin/graph/sync` - No longer needed
@@ -201,12 +257,7 @@ class DetectedFlavorCreate(BaseModel):
 - Remove `BackgroundTasks` dependency from all endpoints
 - Simplify response models (no more dual-source data)
 
-**Add:**
-- `GET /recommendations/similar/{coffee_id}` - Similar coffees
-- `GET /recommendations/by-flavor` - Coffees by flavor (query params)
-- `GET /me/flavor-profile` - User's detected flavor aggregate
-
-### Updated Endpoint Flow
+### Example Endpoint Flow
 
 **POST /tastings** (simplified):
 ```python
