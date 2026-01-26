@@ -1,3 +1,5 @@
+"""Roaster schemas for API requests and responses."""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -8,7 +10,7 @@ class RoasterBase(BaseModel):
     """Base roaster schema with common fields."""
 
     name: str = Field(..., min_length=1, max_length=255, description="Roaster name")
-    location: str | None = Field(None, max_length=255, description="Roaster location")
+    location: str | None = Field(None, max_length=255, description="Roaster location (city, state, country)")
     website: str | None = Field(None, max_length=500, description="Roaster website URL")
     description: str | None = Field(None, description="Roaster description")
 
@@ -60,16 +62,15 @@ class RoasterResponse(RoasterBase):
 
     id: UUID
     created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True
 
 
 class RoasterListResponse(BaseModel):
-    """Schema for roaster list responses."""
+    """Paginated roaster list response."""
 
-    roasters: list[RoasterResponse]
+    items: list[RoasterResponse]
     total: int
-    page: int
-    size: int
+    skip: int
+    limit: int

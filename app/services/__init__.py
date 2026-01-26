@@ -1,10 +1,8 @@
 """Service layer for external integrations."""
 
-from .embedding_trueup import TrueupResult, embedding_trueup_service
-from .embeddings import embedding_service
+from .embeddings import EmbeddingService, embedding_service
 
 __all__ = [
+    "EmbeddingService",
     "embedding_service",
-    "embedding_trueup_service",
-    "TrueupResult",
 ]

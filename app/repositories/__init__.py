@@ -1,27 +1,26 @@
-"""Repository layer for data access."""
+"""Repository layer for data access.
 
-# Re-export SQL repositories for backward compatibility
-from .sql import (
-    BaseRepository,
-    CoffeeRepository,
-    FlavorTagRepository,
-    RoasterRepository,
-    TastingRepository,
-    coffee_repository,
-    flavor_tag_repository,
-    roaster_repository,
-    tasting_repository,
-)
+Neo4j-only architecture - all data operations go through Neo4j.
+"""
+
+from .coffee import CoffeeRepository, coffee_repository
+from .flavor import FlavorRepository, flavor_repository
+from .recommendation import RecommendationRepository, recommendation_repository
+from .roaster import RoasterRepository, roaster_repository
+from .tasting import TastingRepository, tasting_repository
+from .user import UserRepository, user_repository
 
 __all__ = [
-    # SQL repositories
-    "BaseRepository",
     "CoffeeRepository",
     "coffee_repository",
-    "FlavorTagRepository",
-    "flavor_tag_repository",
+    "FlavorRepository",
+    "flavor_repository",
+    "RecommendationRepository",
+    "recommendation_repository",
     "RoasterRepository",
     "roaster_repository",
     "TastingRepository",
     "tasting_repository",
+    "UserRepository",
+    "user_repository",
 ]

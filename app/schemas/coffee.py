@@ -1,11 +1,12 @@
+"""Coffee schemas for API requests and responses."""
+
 from datetime import datetime
-from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..models.coffee import ProcessingMethod, RoastLevel
-from .flavor_tag import FlavorTagResponse
+from .enums import ProcessingMethod, RoastLevel
+from .flavor import FlavorResponse
 from .roaster import RoasterSummary
 
 
@@ -18,28 +19,22 @@ class CoffeeBase(BaseModel):
     # Origin info
     origin_country: str | None = Field(None, max_length=100, description="Country of origin")
     origin_region: str | None = Field(None, max_length=255, description="Region of origin")
-    farm_name: str | None = Field(None, max_length=255, description="Farm name")
-    producer: str | None = Field(None, max_length=255, description="Producer name")
-    altitude: str | None = Field(None, max_length=100, description="Altitude range (e.g., '1200-1400m')")
 
     # Processing
     processing_method: ProcessingMethod | None = Field(None, description="Coffee processing method")
-    variety: str | None = Field(None, max_length=255, description="Coffee variety/cultivar")
+    variety: str | None = Field(None, max_length=255, description="Coffee variety (bourbon, gesha, typica, etc.)")
 
     # Roasting
     roast_level: RoastLevel | None = Field(None, description="Roast level")
-    roast_date: str | None = Field(None, max_length=50, description="Roast date")
 
     # Additional info
-    description: str | None = Field(None, description="Coffee description")
-    price: Decimal | None = Field(None, ge=0, decimal_places=2, description="Price")
-    bag_size: str | None = Field(None, max_length=50, description="Bag size (e.g., '12oz', '340g')")
+    description: str | None = Field(None, description="Coffee description (for semantic search)")
 
 
 class CoffeeCreate(CoffeeBase):
     """Schema for creating a new coffee."""
 
-    flavor_tags: list[str] = Field(default_factory=list, description="List of flavor tag names")
+    flavor_ids: list[UUID] = Field(default_factory=list, description="List of expected flavor IDs (HAS_FLAVOR)")
 
 
 class CoffeeUpdate(BaseModel):
@@ -51,31 +46,35 @@ class CoffeeUpdate(BaseModel):
     # Origin info
     origin_country: str | None = Field(None, max_length=100, description="Country of origin")
     origin_region: str | None = Field(None, max_length=255, description="Region of origin")
-    farm_name: str | None = Field(None, max_length=255, description="Farm name")
-    producer: str | None = Field(None, max_length=255, description="Producer name")
-    altitude: str | None = Field(None, max_length=100, description="Altitude range")
 
     # Processing
     processing_method: ProcessingMethod | None = Field(None, description="Coffee processing method")
-    variety: str | None = Field(None, max_length=255, description="Coffee variety/cultivar")
+    variety: str | None = Field(None, max_length=255, description="Coffee variety")
 
     # Roasting
     roast_level: RoastLevel | None = Field(None, description="Roast level")
-    roast_date: str | None = Field(None, max_length=50, description="Roast date")
 
     # Additional info
     description: str | None = Field(None, description="Coffee description")
-    price: Decimal | None = Field(None, ge=0, decimal_places=2, description="Price")
-    bag_size: str | None = Field(None, max_length=50, description="Bag size")
+
+    # Flavor relationships
+    flavor_ids: list[UUID] | None = Field(None, description="Replace expected flavors (HAS_FLAVOR)")
 
 
-class CoffeeResponse(CoffeeBase):
+class CoffeeResponse(BaseModel):
     """Schema for coffee responses."""
 
     id: UUID
+    name: str
+    roaster_id: UUID
+    origin_country: str | None = None
+    origin_region: str | None = None
+    processing_method: ProcessingMethod | None = None
+    variety: str | None = None
+    roast_level: RoastLevel | None = None
+    description: str | None = None
     created_at: datetime
-    updated_at: datetime
-    flavor_tags: list[FlavorTagResponse] = Field(default_factory=list, description="Associated flavor tags")
+    flavors: list[FlavorResponse] = Field(default_factory=list, description="Expected flavors")
     roaster: RoasterSummary | None = Field(None, description="Roaster information")
 
     class Config:
@@ -83,9 +82,9 @@ class CoffeeResponse(CoffeeBase):
 
 
 class CoffeeListResponse(BaseModel):
-    """Schema for coffee list responses."""
+    """Paginated coffee list response."""
 
-    coffees: list[CoffeeResponse]
+    items: list[CoffeeResponse]
     total: int
-    page: int
-    size: int
+    skip: int
+    limit: int
