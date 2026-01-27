@@ -84,6 +84,9 @@ async def validate_access_token(token: str) -> dict[str, Any]:
     """
     payload = await jwt_validator.validate_token(token)
 
+    # Extract user metadata from Supabase JWT (if present)
+    user_metadata = payload.get("user_metadata", {})
+
     return {
         "user_id": payload["sub"],
         "email": payload.get("email"),
@@ -92,4 +95,8 @@ async def validate_access_token(token: str) -> dict[str, Any]:
         "session_id": payload.get("session_id"),  # Supabase-specific claim
         "exp": payload.get("exp"),
         "iat": payload.get("iat"),
+        # User metadata from Supabase (may be empty)
+        "first_name": user_metadata.get("first_name"),
+        "last_name": user_metadata.get("last_name"),
+        "display_name": user_metadata.get("display_name") or user_metadata.get("name"),
     }

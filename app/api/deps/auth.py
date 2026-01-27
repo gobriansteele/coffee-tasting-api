@@ -15,8 +15,14 @@ logger = get_logger(__name__)
 # HTTP Bearer token scheme
 security = HTTPBearer(auto_error=False)
 
-# Cypher query for ensuring user exists
-_MERGE_USER_QUERY = "MERGE (u:CoffeeDrinker {id: $user_id})"
+# Cypher query for ensuring user exists with profile data
+_MERGE_USER_QUERY = """
+MERGE (u:CoffeeDrinker {id: $user_id})
+ON CREATE SET u.email = $email,
+              u.first_name = $first_name,
+              u.last_name = $last_name,
+              u.display_name = $display_name
+"""
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict[str, Any]:
@@ -77,24 +83,36 @@ async def get_current_user_id(current_user: dict[str, Any] = Depends(get_current
 
 
 async def ensure_user_exists(
-    user_id: str = Depends(get_current_user_id),
+    current_user: dict[str, Any] = Depends(get_current_user),
     session: AsyncSession = Depends(get_graph_db),
 ) -> str:
     """
     Ensures CoffeeDrinker node exists for authenticated user.
 
     Uses MERGE for idempotent creation - safe to call on every request.
+    ON CREATE SET populates profile fields only when the node is first created.
     This dependency validates the JWT AND ensures the user node exists in Neo4j.
 
     Args:
-        user_id: The authenticated user's ID from JWT
+        current_user: The authenticated user info from JWT
         session: Neo4j async session
 
     Returns:
         The user ID string
     """
+    user_id = current_user.get("user_id")
+    if not user_id or not isinstance(user_id, str):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user ID in token")
+
     try:
-        await session.run(_MERGE_USER_QUERY, user_id=user_id)
+        await session.run(
+            _MERGE_USER_QUERY,
+            user_id=user_id,
+            email=current_user.get("email"),
+            first_name=current_user.get("first_name"),
+            last_name=current_user.get("last_name"),
+            display_name=current_user.get("display_name"),
+        )
         logger.debug(f"Ensured CoffeeDrinker exists for user: {user_id}")
     except Exception as e:
         logger.error(f"Failed to ensure user exists in Neo4j: {e}")
