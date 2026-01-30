@@ -36,6 +36,7 @@ class TestTastingSchemaComposition:
                 for fid in flavor_ids
             ],
         )
+        assert tasting.detected_flavors is not None
         assert len(tasting.detected_flavors) == 3
 
     def test_tasting_complete_flow(self) -> None:
@@ -63,6 +64,8 @@ class TestTastingSchemaComposition:
         assert tasting.brew_method == BrewMethod.POUROVER
         assert tasting.grind_size == GrindSize.MEDIUM
         assert tasting.notes is not None
+        assert tasting.detected_flavors is not None
         assert len(tasting.detected_flavors) == 1
         assert tasting.detected_flavors[0].intensity == 8
+        assert tasting.rating is not None
         assert tasting.rating.score == 5

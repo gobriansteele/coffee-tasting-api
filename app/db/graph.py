@@ -22,9 +22,11 @@ async def create_graph_driver() -> None:
         return
 
     try:
-        # Mask password for logging
-        masked_uri = settings.NEO4J_URI
-        logger.info("Connecting to Neo4j", uri=masked_uri)
+        # Type narrowing: neo4j_configured check above guarantees these are set
+        assert settings.NEO4J_URI is not None
+        assert settings.NEO4J_PASSWORD is not None
+
+        logger.info("Connecting to Neo4j", uri=settings.NEO4J_URI)
 
         _driver = AsyncGraphDatabase.driver(
             settings.NEO4J_URI,

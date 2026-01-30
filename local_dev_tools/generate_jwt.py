@@ -54,7 +54,7 @@ def generate_jwt_token(user_id: str, email: str, role: str = "authenticated", ho
     return token
 
 
-def main():
+def main() -> None:
     """Main function to generate and print JWT token."""
     if len(sys.argv) < 3:
         print("Usage: python generate_jwt.py <user_id> <email> [role] [hours]")
@@ -75,6 +75,8 @@ def main():
         print(f"Authorization: Bearer {token}")
 
         # Decode and display token info for verification
+        # SUPABASE_JWT_SECRET is guaranteed set because generate_jwt_token succeeded
+        assert settings.SUPABASE_JWT_SECRET is not None
         decoded = jwt.decode(
             token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"], audience="authenticated"
         )

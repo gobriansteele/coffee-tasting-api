@@ -11,10 +11,13 @@ from jose import jwt as jose_jwt
 load_dotenv()
 
 
-async def test_jwt_validation():
+async def test_jwt_validation() -> None:
     """Test JWT validation with different scenarios."""
 
     jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
+    if not jwt_secret:
+        print("Error: SUPABASE_JWT_SECRET not set in environment")
+        return
     print(f"JWT Secret loaded: {jwt_secret[:20]}...{jwt_secret[-20:]}")
     print(f"JWT Secret length: {len(jwt_secret)}")
 

@@ -1,4 +1,5 @@
 import secrets
+from collections.abc import Callable, Coroutine
 from typing import Any, cast
 
 from fastapi import Depends, Header, HTTPException, status
@@ -120,7 +121,7 @@ async def ensure_user_exists(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to initialize user session",
         ) from e
-    return user_id
+    return cast(str, user_id)
 
 
 def require_user_access(resource_user_id: str, current_user_id: str) -> None:
@@ -179,10 +180,10 @@ async def get_current_user_role(current_user: dict[str, Any] = Depends(get_curre
     Returns:
         The user role string ('admin' or 'user')
     """
-    return current_user.get("user_role", "user")
+    return cast(str, current_user.get("user_role", "user"))
 
 
-def require_role(allowed_roles: list[str]):
+def require_role(allowed_roles: list[str]) -> Callable[..., Coroutine[Any, Any, str]]:
     """
     Factory function to create a dependency that requires specific roles.
 
@@ -212,7 +213,7 @@ def require_role(allowed_roles: list[str]):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied: This endpoint requires one of these roles: {allowed_roles}",
             )
-        return user_role
+        return cast(str, user_role)
 
     return role_checker
 

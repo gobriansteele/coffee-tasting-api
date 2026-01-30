@@ -60,7 +60,7 @@ def setup_constraints(uri: str, user: str, password: str) -> None:
         print("Creating constraints...")
         for name, query in CONSTRAINTS:
             try:
-                session.run(query)  # type: ignore[arg-type]
+                session.run(query)
                 print(f"  ✓ {name}")
             except Exception as e:
                 print(f"  ✗ {name}: {e}")
@@ -69,7 +69,7 @@ def setup_constraints(uri: str, user: str, password: str) -> None:
         print("\nCreating indexes...")
         for name, query in INDEXES:
             try:
-                session.run(query)  # type: ignore[arg-type]
+                session.run(query)
                 print(f"  ✓ {name}")
             except Exception as e:
                 print(f"  ✗ {name}: {e}")
@@ -78,7 +78,7 @@ def setup_constraints(uri: str, user: str, password: str) -> None:
         print("\nCreating vector indexes...")
         for name, query in VECTOR_INDEXES:
             try:
-                session.run(query)  # type: ignore[arg-type]
+                session.run(query)
                 print(f"  ✓ {name}")
             except Exception as e:
                 print(f"  ✗ {name}: {e}")

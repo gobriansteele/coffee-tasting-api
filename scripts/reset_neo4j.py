@@ -26,7 +26,7 @@ def reset_database(uri: str, user: str, password: str) -> None:
             constraint_name = c.get("name")
             if constraint_name:
                 print(f"  Dropping constraint: {constraint_name}")
-                session.run(f"DROP CONSTRAINT {constraint_name}")  # type: ignore[arg-type]
+                session.run(f"DROP CONSTRAINT {constraint_name}")
 
         # Drop all indexes (except lookup indexes)
         print("Dropping indexes...")
@@ -35,7 +35,7 @@ def reset_database(uri: str, user: str, password: str) -> None:
             index_name = i.get("name")
             if index_name:
                 print(f"  Dropping index: {index_name}")
-                session.run(f"DROP INDEX {index_name}")  # type: ignore[arg-type]
+                session.run(f"DROP INDEX {index_name}")
 
         # Delete all data
         print("Deleting all nodes and relationships...")

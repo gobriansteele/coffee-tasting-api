@@ -51,6 +51,7 @@ dev = [
   "mypy>=1.7.1",
   "pre-commit>=3.6.0",
   "factory-boy>=3.3.0",
+  "types-python-jose>=3.3.0",
 ]
 
 [project.urls]
@@ -86,6 +87,7 @@ known-first-party = ["app"]
 
 [tool.mypy]
 python_version = "3.11"
+plugins = ["pydantic.mypy"]
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -112,6 +114,11 @@ module = [
     "openai.*"
 ]
 ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
