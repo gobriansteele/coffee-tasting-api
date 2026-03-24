@@ -64,6 +64,12 @@ class Settings(BaseSettings):
         default="text-embedding-3-small", description="OpenAI embedding model for vector search"
     )
 
+    # Anthropic (Coffee Identification)
+    ANTHROPIC_API_KEY: str | None = Field(default=None, description="Anthropic API key for coffee identification")
+    ANTHROPIC_MODEL: str = Field(
+        default="claude-sonnet-4-20250514", description="Anthropic model for coffee identification"
+    )
+
     # ChromaDB
     CHROMA_DB_NAME: str | None = Field(default=None, description="ChromaDB database name")
     CHROMA_API_KEY: str | None = Field(default=None, description="ChromaDB API key")

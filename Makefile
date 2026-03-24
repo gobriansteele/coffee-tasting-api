@@ -29,7 +29,7 @@ install:
 	uv pip install -e .
 
 dev:
-	uv pip install -e ".[dev]"
+	uv sync --group dev
 
 # Development server
 run:

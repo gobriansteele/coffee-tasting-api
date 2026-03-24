@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import coffees, flavors, health, me, recommendations, roasters, tastings
+from app.api.v1.endpoints import coffees, flavors, health, identification, me, recommendations, roasters, tastings
 
 api_router = APIRouter()
 
@@ -12,3 +12,4 @@ api_router.include_router(flavors.router, prefix="/flavors", tags=["flavors"])
 api_router.include_router(tastings.router, prefix="/tastings", tags=["tastings"])
 api_router.include_router(me.router, prefix="/me", tags=["me"])
 api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
+api_router.include_router(identification.router, prefix="/identify-coffee", tags=["identification"])
