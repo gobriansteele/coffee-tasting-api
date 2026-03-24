@@ -22,8 +22,9 @@ to extract structured product information.
 
 Instructions:
 - Extract ALL visible information from the photo(s).
-- Use null for any field you cannot clearly determine from the image. Never guess or infer values \
-that are not explicitly visible.
+- For each field, assess your confidence on a scale of 0 to 1. If your confidence is below 0.7, \
+return null for that field. The user can always fill in missing values manually. \
+Never guess or infer values that are not explicitly visible.
 - For processing_method, only use one of these exact values: "washed", "natural", "honey", "anaerobic". \
 If the bag mentions a processing method that does not match one of these exactly, use null.
 - For roast_level, only use one of these exact values: "light", "medium", "medium_dark", "dark". \
@@ -88,7 +89,7 @@ class IdentificationService:
     def client(self) -> AsyncAnthropic:
         """Lazy initialization of Anthropic client."""
         if self._client is None:
-            if not settings.ANTHROPIC_API_KEY:
+            if not self.is_configured:
                 raise ValueError("ANTHROPIC_API_KEY is not configured")
             self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         return self._client
