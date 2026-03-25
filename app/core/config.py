@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # Anthropic (Coffee Identification)
     ANTHROPIC_API_KEY: str | None = Field(default=None, description="Anthropic API key for coffee identification")
     ANTHROPIC_MODEL: str = Field(
-        default="claude-sonnet-4-20250514", description="Anthropic model for coffee identification"
+        default="claude-sonnet-4-6", description="Anthropic model for coffee identification"
     )
 
     # ChromaDB
