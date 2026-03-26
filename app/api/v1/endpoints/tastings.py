@@ -91,6 +91,9 @@ def _build_tasting_response(tasting: dict) -> TastingResponse:
         brew_method=tasting.get("brew_method"),
         grind_size=tasting.get("grind_size"),
         notes=tasting.get("notes"),
+        roast_date=tasting.get("roast_date"),
+        best_by_date=tasting.get("best_by_date"),
+        lot_number=tasting.get("lot_number"),
         created_at=tasting["created_at"],
         coffee=coffee,
         detected_flavors=detected_flavors,
@@ -121,6 +124,9 @@ async def create_tasting(
             brew_method=tasting_data.brew_method.value if tasting_data.brew_method else None,
             grind_size=tasting_data.grind_size.value if tasting_data.grind_size else None,
             notes=tasting_data.notes,
+            roast_date=tasting_data.roast_date,
+            best_by_date=tasting_data.best_by_date,
+            lot_number=tasting_data.lot_number,
             detected_flavors=[
                 {"flavor_id": str(df.flavor_id), "intensity": df.intensity}
                 for df in tasting_data.detected_flavors
@@ -220,6 +226,9 @@ async def update_tasting(
             brew_method=tasting_data.brew_method.value if tasting_data.brew_method else None,
             grind_size=tasting_data.grind_size.value if tasting_data.grind_size else None,
             notes=tasting_data.notes,
+            roast_date=tasting_data.roast_date,
+            best_by_date=tasting_data.best_by_date,
+            lot_number=tasting_data.lot_number,
             detected_flavors=[
                 {"flavor_id": str(df.flavor_id), "intensity": df.intensity}
                 for df in tasting_data.detected_flavors

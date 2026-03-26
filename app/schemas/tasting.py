@@ -63,6 +63,9 @@ class TastingCreate(BaseModel):
     brew_method: BrewMethod | None = Field(None, description="Brewing method used")
     grind_size: GrindSize | None = Field(None, description="Grind size used")
     notes: str | None = Field(None, description="Tasting notes")
+    roast_date: str | None = Field(None, description="Roast date as printed on the bag")
+    best_by_date: str | None = Field(None, description="Best-by date as printed on the bag")
+    lot_number: str | None = Field(None, description="Lot number from the bag")
     detected_flavors: list[DetectedFlavorCreate] | None = Field(
         None, description="Flavors detected during tasting"
     )
@@ -75,6 +78,9 @@ class TastingUpdate(BaseModel):
     brew_method: BrewMethod | None = Field(None, description="Brewing method used")
     grind_size: GrindSize | None = Field(None, description="Grind size used")
     notes: str | None = Field(None, description="Tasting notes")
+    roast_date: str | None = Field(None, description="Roast date as printed on the bag")
+    best_by_date: str | None = Field(None, description="Best-by date as printed on the bag")
+    lot_number: str | None = Field(None, description="Lot number from the bag")
     detected_flavors: list[DetectedFlavorCreate] | None = Field(
         None, description="Flavors detected (replaces existing)"
     )
@@ -88,6 +94,9 @@ class TastingResponse(BaseModel):
     brew_method: str | None = None
     grind_size: str | None = None
     notes: str | None = None
+    roast_date: str | None = None
+    best_by_date: str | None = None
+    lot_number: str | None = None
     created_at: datetime
     coffee: CoffeeResponse | None = None
     detected_flavors: list[DetectedFlavorResponse] = Field(default_factory=list)
