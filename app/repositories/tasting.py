@@ -23,6 +23,9 @@ CREATE (t:Tasting {
     brew_method: $brew_method,
     grind_size: $grind_size,
     notes: $notes,
+    roast_date: $roast_date,
+    best_by_date: $best_by_date,
+    lot_number: $lot_number,
     created_at: datetime($created_at)
 })
 CREATE (u)-[:LOGGED]->(t)
@@ -65,7 +68,8 @@ WITH t, c, ro, r,
      collect(DISTINCT {id: f.id, name: f.name, category: f.category, intensity: det.intensity}) AS detected_flavors,
      collect(DISTINCT {id: cf.id, name: cf.name, category: cf.category}) AS coffee_flavors
 RETURN t.id AS id, t.brew_method AS brew_method, t.grind_size AS grind_size,
-       t.notes AS notes, t.created_at AS created_at,
+       t.notes AS notes, t.roast_date AS roast_date, t.best_by_date AS best_by_date,
+       t.lot_number AS lot_number, t.created_at AS created_at,
        c.id AS coffee_id, c.name AS coffee_name, c.origin_country AS coffee_origin_country,
        c.origin_region AS coffee_origin_region, c.processing_method AS coffee_processing_method,
        c.variety AS coffee_variety, c.roast_level AS coffee_roast_level,
@@ -84,7 +88,8 @@ OPTIONAL MATCH (t)-[det:DETECTED]->(f:Flavor)
 WITH t, c, ro, r,
      collect(DISTINCT {id: f.id, name: f.name, category: f.category, intensity: det.intensity}) AS detected_flavors
 RETURN t.id AS id, t.brew_method AS brew_method, t.grind_size AS grind_size,
-       t.notes AS notes, t.created_at AS created_at,
+       t.notes AS notes, t.roast_date AS roast_date, t.best_by_date AS best_by_date,
+       t.lot_number AS lot_number, t.created_at AS created_at,
        c.id AS coffee_id, c.name AS coffee_name,
        ro.id AS roaster_id, ro.name AS roaster_name,
        r.id AS rating_id, r.score AS rating_score, r.notes AS rating_notes, r.created_at AS rating_created_at,
@@ -102,7 +107,8 @@ OPTIONAL MATCH (t)-[det:DETECTED]->(f:Flavor)
 WITH t, c, ro, r,
      collect(DISTINCT {id: f.id, name: f.name, category: f.category, intensity: det.intensity}) AS detected_flavors
 RETURN t.id AS id, t.brew_method AS brew_method, t.grind_size AS grind_size,
-       t.notes AS notes, t.created_at AS created_at,
+       t.notes AS notes, t.roast_date AS roast_date, t.best_by_date AS best_by_date,
+       t.lot_number AS lot_number, t.created_at AS created_at,
        c.id AS coffee_id, c.name AS coffee_name,
        ro.id AS roaster_id, ro.name AS roaster_name,
        r.id AS rating_id, r.score AS rating_score, r.notes AS rating_notes, r.created_at AS rating_created_at,
@@ -126,7 +132,10 @@ _UPDATE_TASTING: LiteralString = """
 MATCH (u:CoffeeDrinker {id: $user_id})-[:LOGGED]->(t:Tasting {id: $tasting_id})
 SET t.brew_method = COALESCE($brew_method, t.brew_method),
     t.grind_size = COALESCE($grind_size, t.grind_size),
-    t.notes = COALESCE($notes, t.notes)
+    t.notes = COALESCE($notes, t.notes),
+    t.roast_date = COALESCE($roast_date, t.roast_date),
+    t.best_by_date = COALESCE($best_by_date, t.best_by_date),
+    t.lot_number = COALESCE($lot_number, t.lot_number)
 RETURN t.id AS id
 """
 
@@ -236,6 +245,9 @@ class TastingRepository(GraphRepository):
         brew_method: str | None = None,
         grind_size: str | None = None,
         notes: str | None = None,
+        roast_date: str | None = None,
+        best_by_date: str | None = None,
+        lot_number: str | None = None,
         detected_flavors: list[dict] | None = None,
         rating: dict | None = None,
     ) -> dict | None:
@@ -248,6 +260,9 @@ class TastingRepository(GraphRepository):
             brew_method: Optional brewing method
             grind_size: Optional grind size
             notes: Optional tasting notes
+            roast_date: Optional roast date as printed on the bag
+            best_by_date: Optional best-by date as printed on the bag
+            lot_number: Optional lot number from the bag
             detected_flavors: Optional list of {flavor_id, intensity} dicts
             rating: Optional {score, notes} dict
 
@@ -267,6 +282,9 @@ class TastingRepository(GraphRepository):
                     "brew_method": brew_method,
                     "grind_size": grind_size,
                     "notes": notes,
+                    "roast_date": roast_date,
+                    "best_by_date": best_by_date,
+                    "lot_number": lot_number,
                     "created_at": created_at,
                 },
             )
@@ -419,6 +437,9 @@ class TastingRepository(GraphRepository):
         brew_method: str | None = None,
         grind_size: str | None = None,
         notes: str | None = None,
+        roast_date: str | None = None,
+        best_by_date: str | None = None,
+        lot_number: str | None = None,
         detected_flavors: list[dict] | None = None,
     ) -> dict | None:
         """Update a tasting.
@@ -430,6 +451,9 @@ class TastingRepository(GraphRepository):
             brew_method: Optional new brew method
             grind_size: Optional new grind size
             notes: Optional new notes
+            roast_date: Optional new roast date
+            best_by_date: Optional new best-by date
+            lot_number: Optional new lot number
             detected_flavors: Optional new detected flavors (replaces existing)
 
         Returns:
@@ -444,6 +468,9 @@ class TastingRepository(GraphRepository):
                     "brew_method": brew_method,
                     "grind_size": grind_size,
                     "notes": notes,
+                    "roast_date": roast_date,
+                    "best_by_date": best_by_date,
+                    "lot_number": lot_number,
                 },
             )
             record = await result.single()
