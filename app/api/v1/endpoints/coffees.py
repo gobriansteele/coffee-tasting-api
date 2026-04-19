@@ -58,7 +58,7 @@ def _build_coffee_response(coffee: dict) -> CoffeeResponse:
     )
 
 
-@router.post("/", response_model=CoffeeResponse, status_code=201)
+@router.post("", response_model=CoffeeResponse, status_code=201)
 async def create_coffee(
     coffee_data: CoffeeCreate,
     session: AsyncSession = Depends(get_graph_db),
@@ -102,7 +102,7 @@ async def create_coffee(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.get("/", response_model=CoffeeListResponse)
+@router.get("", response_model=CoffeeListResponse)
 async def list_coffees(
     skip: int = Query(0, ge=0, description="Number of coffees to skip"),
     limit: int = Query(20, ge=1, le=100, description="Number of coffees to return"),

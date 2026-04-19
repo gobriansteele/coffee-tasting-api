@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=UserProfile)
+@router.get("", response_model=UserProfile)
 async def get_current_user_profile(
     session: AsyncSession = Depends(get_graph_db),
     user_id: str = Depends(ensure_user_exists),
@@ -48,7 +48,7 @@ async def get_current_user_profile(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.patch("/", response_model=UserProfile)
+@router.patch("", response_model=UserProfile)
 async def update_current_user_profile(
     profile_data: UserProfileUpdate,
     session: AsyncSession = Depends(get_graph_db),

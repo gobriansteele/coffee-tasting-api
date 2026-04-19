@@ -101,7 +101,7 @@ def _build_tasting_response(tasting: dict) -> TastingResponse:
     )
 
 
-@router.post("/", response_model=TastingResponse, status_code=201)
+@router.post("", response_model=TastingResponse, status_code=201)
 async def create_tasting(
     tasting_data: TastingCreate,
     session: AsyncSession = Depends(get_graph_db),
@@ -151,7 +151,7 @@ async def create_tasting(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.get("/", response_model=TastingListResponse)
+@router.get("", response_model=TastingListResponse)
 async def list_tastings(
     skip: int = Query(0, ge=0, description="Number of tastings to skip"),
     limit: int = Query(20, ge=1, le=100, description="Number of tastings to return"),

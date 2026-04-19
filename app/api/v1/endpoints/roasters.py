@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.post("/", response_model=RoasterResponse, status_code=201)
+@router.post("", response_model=RoasterResponse, status_code=201)
 async def create_roaster(
     roaster_data: RoasterCreate,
     session: AsyncSession = Depends(get_graph_db),
@@ -66,7 +66,7 @@ async def create_roaster(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.get("/", response_model=RoasterListResponse)
+@router.get("", response_model=RoasterListResponse)
 async def list_roasters(
     skip: int = Query(0, ge=0, description="Number of roasters to skip"),
     limit: int = Query(20, ge=1, le=100, description="Number of roasters to return"),
